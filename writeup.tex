@@ -1,0 +1,86 @@
+\documentclass[]{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+
+\newcommand{\lsyn}{|[}
+\newcommand{\rsyn}{|]}
+
+%opening
+\title{Tight Taint Tracking}
+\author{}
+
+\begin{document}
+
+\maketitle
+
+\section{Language Syntax}
+
+We assume, for simplicity, that programs are deterministic. The {\sf read()} function reads the next value, specified by the user, out of a (potentially infinite) sequence of integral numbers.
+
+\begin{tabular}{rclc}
+{\sf c} & ::= & {\sf x := y}\ $|$ & {\bf (assignment)}\\
+		 & 		 & {\sf x := $n$}\ $|$ & {\bf (aconst)}\\
+		 & 		 & {\sf x := read()}\ $|$ & {\bf (input)}\\
+		 & 		 & {\sf x := y aop z}\ $|$ & {\bf (aexp)}\\
+		  & 	 & {\sf if (b) \{ c \} else \{ c \}}\ $|$ & {\bf (condition)}\\
+		  & 	 & {\sf while (b) \{ c \}}\ $|$ & {\bf (loop)}\\
+		  & 	 & {\sf c\ ;\ c} & {\bf (composition)}\\
+{\sf aop} & ::= & $+\ |\ -\ |\ \times\ |\ /\ |\ \%$ & {\bf (aop)} \\
+{\sf b} & ::= & {\sf true}\ $|$\ {\sf false} $|$ & {\bf (bconst)} \\
+		 & 		 & {\sf b} $\wedge$ {\sf b}\ $|$\ {\sf b} $\vee$ {\sf b}\ $|$\ $\neg${\sf b}\ $|$ & {\bf (propositional)} \\
+		 &        & {\sf x bop $n$}	& {\bf (bexp)}\\
+{\sf bop} & ::= & $<\ |\ >\ |\ \leq\ |\ \geq\ |\ \neq\ |\ =$ & {\bf (bop)}
+\end{tabular}
+
+\section{Program Trace}
+
+We define the trace function, $t$, as follows:
+
+\[ 
+t({\sf c},\sigma) = \begin{cases} 
+t({\sf c}_1,\sigma) &\mbox{if } {\sf c}={\sf if (b)\ \{ c_1 \}\ else\ \{ c_2 \}},\lsyn {\sf b} \rsyn\sigma = {\sf true} \\ 
+t({\sf c}_2,\sigma) &\mbox{if } {\sf c}={\sf if (b)\ \{ c_1 \}\ else\ \{ c_2 \}},\lsyn {\sf b} \rsyn\sigma = {\sf false} \\ 
+\epsilon &\mbox{if } {\sf c}={\sf while (b)\ \{ c_1 \}},\lsyn {\sf b} \rsyn\sigma = {\sf false} \\ 
+t({\sf c}_1 ;\ {\sf c},\sigma) &\mbox{if } {\sf c}={\sf while (b)\ \{ c_1 \}},\lsyn {\sf b} \rsyn\sigma = {\sf true} \\ 
+t({\sf c}_1,\sigma) \cdot t({\sf c}_2,\lsyn {\sf c}_1 \rsyn \sigma) &\mbox{if } {\sf c}={\sf c}_1\ ;\ {\sf c}_2 \\ 
+{\sf c} & \mbox{otherwise}
+\end{cases}
+\]
+
+\section{The Tainting Property}
+
+$$
+\begin{array}{rrcl}
+& {\sf x := input()} & \models & \{ \odot \rightarrow {\sf x} \} \\
+& {\sf x := y} & \models & \{ {\sf y} \rightarrow {\sf x} \}\\
+& {\sf x := y\ aexp\ z} & \models & \{ {\sf y} \rightarrow {\sf x},{\sf z} \rightarrow {\sf x} \} \\
+& \textsf{x := $n$} & \models & \emptyset\\
+t \models S,{\sf x := \ldots} \models S' \Rightarrow & t \cdot [{\sf x := \ldots}] & \models & (S \setminus \{ \_ \rightarrow {\sf x} \}) \cup S' \\
+t \models S,S' \subseteq S \Rightarrow & t & \models & S' \\
+\end{array}
+$$
+
+Given trace $t$ and variable {\sf x}, we say that the tainting property holds w.r.t. $t$ and {\sf x} iff $t \models \{ \odot \rightarrow {\sf x} \}$.
+
+A sound solution is to maintain the set of all tainted variables at every point along the trace. The implication is to maintain a shadow variable $\overline{{\sf x}}$ per each program variable ${\sf x}$, and instrument every variable definition with another instruction for the purpose of taint tracking. 
+
+\subsection{Possible Cost Functions}
+
+Two possible cost functions are (i) the number (or proportion) of shadow variables and (ii) the number (or proportion) of instrumentation instructions.
+
+\subsection{Optimizations w.r.t. Default Taint Tracking} 
+
+Given program ${\sf p}$, we denote by $T({\sf p})$ the set of all traces of execution of ${\sf p}$. We define an equivalence relation $\equiv$ over queries $q$ of the form $\{ \odot \rightarrow {\sf x} \}$ (abbreviated as $\odot \rightarrow {\sf x}$) as follows:
+\begin{quote}
+$q \equiv q'
+\Longleftrightarrow \forall \pi \in T({\sf p}).\ t \models q \Leftrightarrow t \models q'$
+\end{quote}
+That is, assuming $q$ is $\odot \rightarrow {\sf x}$ and $q'$
+is $\odot \rightarrow {\sf y}$, there is no execution of ${\sf p}$ such that ${\sf x}$ is tainted but not ${\sf y}$ or vice versa.
+ 
+\paragraph{Redundancy Elimination.} Assuming the ability to detect equivalent queries, effectively reducing to ``correlated'' variables, an immediate optimization is to track taint w.r.t. a representative of each equivalence class rather than the entire class.
+
+\paragraph{Relaxation: Probabilistic Inference.} In the absence of the ability to prove that two variables are correlated, we may instead cast the problem into a probabilistic setting, which we can instantiate via testing. Assume for example that across $n$ (random and independent) executions of the program, a pair of variables has a high degree of correlation. We can utilize Bayesian reasoning or another form of statistical prediction to perform inference across variables/queries.
+ 
+\end{document}
