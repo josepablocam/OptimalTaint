@@ -2,9 +2,12 @@
 
 \usepackage{amsmath}
 \usepackage{amssymb}
+\usepackage{xcolor}
 
 \newcommand{\lsyn}{|[}
 \newcommand{\rsyn}{|]}
+
+\newcommand{\todo}[1]{{\color{red} [[ #1 ]]}}
 
 %opening
 \title{Tight Taint Tracking}
@@ -82,5 +85,83 @@ is $\odot \rightarrow {\sf y}$, there is no execution of ${\sf p}$ such that ${\
 \paragraph{Redundancy Elimination.} Assuming the ability to detect equivalent queries, effectively reducing to ``correlated'' variables, an immediate optimization is to track taint w.r.t. a representative of each equivalence class rather than the entire class.
 
 \paragraph{Relaxation: Probabilistic Inference.} In the absence of the ability to prove that two variables are correlated, we may instead cast the problem into a probabilistic setting, which we can instantiate via testing. Assume for example that across $n$ (random and independent) executions of the program, a pair of variables has a high degree of correlation. We can utilize Bayesian reasoning or another form of statistical prediction to perform inference across variables/queries.
- 
+
+\section{Problem Definition}
+\todo{Need to define the language with shadow variables. That is,
+  define the syntax and semantics of the language. Syntax should allow
+assignments to shadow variables $\overline{x} := e$ where $e$ can
+contain both shadow variables and regular program variables. Let's
+assume/require that shadow variables are boolean valued. Note that
+normal assignment (i.e., to non-shadow variables) and tests of if and
+while statements cannot use shadow variables}
+
+\todo{Define what it means for ${\sf c}'$ to be an instrumented version of {\sf c} (i.e.,
+when you erase the assignments to shadow variables from ${\sf c}'$,
+you have exactly ${\sf c}$. Some simple results such as if we have an
+execution of ${\sf c}$ then we have an equivalent execution of ${\sf
+  c}'$ and vice versa. That is, showing it really is just
+instrumentation and not changing anything fundamental about the computation.}
+
+Given a program {\sf c} and a variable {\sf x}, we are interested in
+knowing whether the execution of {\sf c} results in {\sf x} being
+tainted at the end of execution. \todo{I suggest for simplicity that
+  we restrict our attention to just terminating program executions.}
+
+That is, we are interested in the sets $tainted = \{ t \mid t =
+t({\sf c},\sigma) \land t \models \{ \odot \rightarrow {\sf x} \} \}$ and
+$untainted = \{ t \mid
+t = t({\sf c},\sigma) \land t \not\models \{ \odot \rightarrow {\sf x} \} \}$
+ \todo{I
+think we may want different notation for this, or something a bit more
+concise?}
+\todo{Note that $tainted$ and $untainted$ do not partition the set of
+traces, since some traces could be infinite. It may be even better to initially not think about loops...}
+
+We can say that instrumentation correctly determines taint for {\sf x}
+if we have ${\sf c}'$, which an instrumented version of {\sf c} such
+that when one partitions the final shadow states of the executions of
+${\sf c}'$, that partition refines $tainted$ and
+$untainted$. Something like:
+If ${\sf c}', \sigma_1 \Downarrow \sigma'_1$ and ${\sf c}', \sigma_2
+\Downarrow \sigma'_2$ and $\sigma'_1 =_\mathit{shadow} \sigma'_2$ then
+either $t({\sf c},\sigma_1)$ and $t({\sf c},\sigma_2)$ are both in $tainted$ or 
+$t({\sf c},\sigma_1)$ and $t({\sf c},\sigma_2)$ are both in $untainted$. That is, the shadow
+state suffices to tell whether $\sf x$ is tainted.
+
+Now we can define \emph{optimal taint instrumentation}, meaning that
+we have a correct instrumentation that is optimal in some cost
+function, e.g., size of shadow state, static number of assignments to
+shadow state, dynamic number of assignments to shadow state,
+... \todo{actually do this formally.}
+
+I(Steve) have some thoughts about heuristics for finding optimal
+instrumentation in the loop-free case, but probably not worth writing
+down here at the moment. First step is to cleanly and crisply define
+the problem.
+
+In general, finding the optimal taint instrumentation will be
+undecidable \todo{this needs a proof, or at least a proof sketch}. But
+it gives us a definition of how well we could possibly do in any
+actual implementation. \todo{Could we use information theory to
+  approximate the number of bits that are needed? That is, if there is
+$n$ information theoretic bits required to distinguish tainted from
+untainted executions (assuming uniform distribution of input states),
+then it is likely(???) we will need at least $n$ physical bits, i.e., $n$
+shadow variables.}
+
+
+\section{Probabilistic}
+
+We can extend the definitions above if we assume that we have a
+probability distribution on input states, or alternatively if we add a
+probabilistic choice operator. The key thing is to get a probability
+distribution (or subdistribution if we have non-terminating programs)
+on traces.
+
+Then we can relax``correctness of instrumentation'' to ``probability of correctness of
+instrumentation'' by considering the probability that instrumentation
+is correct. 
+
+\section{Practical tool}
+
 \end{document}
