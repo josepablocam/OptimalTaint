@@ -1,13 +1,21 @@
 \documentclass[]{article}
 
 \usepackage{amsmath}
+\usepackage{amsthm}
 \usepackage{amssymb}
 \usepackage{xcolor}
 
 \newcommand{\lsyn}{|[}
 \newcommand{\rsyn}{|]}
 
-\newcommand{\todo}[1]{{\color{red} [[ #1 ]]}}
+\newtheorem{defn}{Definition}
+
+\newtheorem{thm}{Theorem}
+
+\newtheorem{lem}{Lemma}
+
+\newcommand{\todo}[1]{textnormal{{\color{black} [[ #1 ]]}}}
+%\newcommand{\todo}[1]{#1}
 
 %opening
 \title{Tight Taint Tracking}
@@ -21,35 +29,93 @@
 
 We assume, for simplicity, that programs are deterministic. The {\sf read()} function reads the next value, specified by the user, out of a (potentially infinite) sequence of integral numbers.
 
+\subsection{Core Syntax}
+
 \begin{tabular}{rclc}
-{\sf c} & ::= & {\sf x := y}\ $|$ & {\bf (assignment)}\\
-		 & 		 & {\sf x := $n$}\ $|$ & {\bf (aconst)}\\
-		 & 		 & {\sf x := read()}\ $|$ & {\bf (input)}\\
-		 & 		 & {\sf x := y aop z}\ $|$ & {\bf (aexp)}\\
-		  & 	 & {\sf if (b) \{ c \} else \{ c \}}\ $|$ & {\bf (condition)}\\
-		  & 	 & {\sf while (b) \{ c \}}\ $|$ & {\bf (loop)}\\
-		  & 	 & {\sf c\ ;\ c} & {\bf (composition)}\\
+{\sf c} & ::= & {\sf i := aexp}\ $|$ & {\bf (aasgn)}\\
+		 & 		  & {\sf z := bexp}\ $|$ & {\bf (basgn)} \\
+		 & 	 & {\sf if (bexp) \{ c \} else \{ c \}}\ $|$ & {\bf (condition)}\\
+		 & 	 & {\sf while (bexp) \{ c \}}\ $|$ & {\bf (loop)}\\
+		 & 	 & {\sf c\ ;\ c} & {\bf (composition)}\\
+{\sf aexp} & ::= & $n$\ $|$\ {\sf read()}\ $|$\ {\sf i aop j} & {\bf (aexp)} \\
 {\sf aop} & ::= & $+\ |\ -\ |\ \times\ |\ /\ |\ \%$ & {\bf (aop)} \\
-{\sf b} & ::= & {\sf true}\ $|$\ {\sf false} $|$ & {\bf (bconst)} \\
-		 & 		 & {\sf b} $\wedge$ {\sf b}\ $|$\ {\sf b} $\vee$ {\sf b}\ $|$\ $\neg${\sf b}\ $|$ & {\bf (propositional)} \\
-		 &        & {\sf x bop $n$}	& {\bf (bexp)}\\
+{\sf bexp} & ::= & {\sf true}\ $|$\ {\sf false} $|$\ {\sf i bop j}\ $|$\ {\sf z}\ $|$ & \\ % {\bf (bconst)} \\
+& 		 & {\sf bexp} $\wedge$ {\sf bexp}\ $|$\ {\sf bexp} $\vee$ {\sf bexp}\ $|$\ $\neg${\sf bexp} & {\bf (bexp)} \\ % {\bf (propositional)} \\
 {\sf bop} & ::= & $<\ |\ >\ |\ \leq\ |\ \geq\ |\ \neq\ |\ =$ & {\bf (bop)}
 \end{tabular}
+
+\subsection{Syntax with Instrumentation Commands}
+
+\begin{tabular}{rclc}
+	{\sf c'}	 & ::= & {\sf c}\ $|$ & {\bf (core)}\\
+		 		  &  	  & ${\sf \overline{z} := iexp}$ & {\bf (shadow)} \\
+   {\sf iexp}  & ::=  & {\sf bexp}\ $|$\ ${\sf \overline{z}}$\ $|$\
+								{\sf iexp} $\wedge$ {\sf iexp}\ $|$\ {\sf iexp} $\vee$ {\sf iexp}\ $|$\ $\neg${\sf iexp} & {\bf (iexp)} \\			 		  
+\end{tabular}
+
+Note that shadow variables are boolean, and that shadow expressions cannot be assigned to regular variables. That is, shadow values cannot escape the shadow state. Stated differently, if program {\sf c} is identical to program {\sf c'} modulo shadow statements, then
+$$
+	\forall \sigma \in \Sigma.\ \lsyn {\sf c} \rsyn \sigma \equiv_{ns} \lsyn {\sf c'} \rsyn \sigma
+$$
+That is, {\sf c} and {\sf c'} are semantically equivalent up to the values assigned to shadow values, which is our intention with $\equiv_{ns}$ ($ns$ standing for ``no shadow'').
+
+%& 		 & {\sf x := $n$}\ $|$ & {\bf (aconst)}\\
+%& 		 & {\sf x := {\sf b}}\ $|$ & {\bf (abool)}\\
+%& 		 & {\sf x := read()}\ $|$ & {\bf (input)}\\
+%& 		 & {\sf x := y aop z}\ $|$ & {\bf (aexp)}\\
+%& 	 & {\sf if (b) \{ c \} else \{ c \}}\ $|$ & {\bf (condition)}\\
+%& 	 & {\sf while (b) \{ c \}}\ $|$ & {\bf (loop)}\\
+%& 	 & {\sf c\ ;\ c} & {\bf (composition)}\\
+%
+%{\sf b} & ::= & {\sf true}\ $|$\ {\sf false} $|$ & {\bf (bconst)} \\
+%& 		 & {\sf b} $\wedge$ {\sf b}\ $|$\ {\sf b} $\vee$ {\sf b}\ $|$\ $\neg${\sf b}\ $|$ & {\bf (propositional)} \\
+%&        & {\sf x bop $n$}	& {\bf (bexp)}\\
+%$\overline{{\sf b}}$ & ::= & {\sf true}\ $|$\ {\sf false} $|$ & {\bf (bconst)} \\
+%& 		 & {\sf b} $\wedge$ {\sf b}\ $|$\ {\sf b} $\vee$ {\sf b}\ $|$\ $\neg${\sf b}\ $|$ & {\bf (propositional)} \\
+%&        & {\sf x bop $n$}	& {\bf (bexp)}\\
+%
+%$\overline{\sf b}$ & ::= & ${\sf b}\ |\ $ & 
+
 
 \section{Program Trace}
 
 We define the trace function, $t$, as follows:
-
 \[ 
 t({\sf c},\sigma) = \begin{cases} 
-t({\sf c}_1,\sigma) &\mbox{if } {\sf c}={\sf if (b)\ \{ c_1 \}\ else\ \{ c_2 \}},\lsyn {\sf b} \rsyn\sigma = {\sf true} \\ 
-t({\sf c}_2,\sigma) &\mbox{if } {\sf c}={\sf if (b)\ \{ c_1 \}\ else\ \{ c_2 \}},\lsyn {\sf b} \rsyn\sigma = {\sf false} \\ 
-\epsilon &\mbox{if } {\sf c}={\sf while (b)\ \{ c_1 \}},\lsyn {\sf b} \rsyn\sigma = {\sf false} \\ 
-t({\sf c}_1 ;\ {\sf c},\sigma) &\mbox{if } {\sf c}={\sf while (b)\ \{ c_1 \}},\lsyn {\sf b} \rsyn\sigma = {\sf true} \\ 
-t({\sf c}_1,\sigma) \cdot t({\sf c}_2,\lsyn {\sf c}_1 \rsyn \sigma) &\mbox{if } {\sf c}={\sf c}_1\ ;\ {\sf c}_2 \\ 
-{\sf c} & \mbox{otherwise}
+t({\sf c}_1,\sigma) &
+	\mbox{if } {\sf c}={\sf if (b)\ \{ c_1 \}\ else\ \{ c_2 \}},\lsyn {\sf b} \rsyn\sigma = {\sf true} \\ 
+t({\sf c}_2,\sigma) &
+	\mbox{if } {\sf c}={\sf if (b)\ \{ c_1 \}\ else\ \{ c_2 \}},\lsyn {\sf b} \rsyn\sigma = {\sf false} \\ 
+\epsilon &
+	\mbox{if } {\sf c}={\sf while (b)\ \{ c_1 \}},\lsyn {\sf b} \rsyn\sigma = {\sf false} \\ 
+t({\sf c}_1\ ;\ {\sf c},\sigma) &
+	\mbox{if } {\sf c}={\sf while (b)\ \{ c_1 \}},\lsyn {\sf b} \rsyn\sigma = {\sf true} \\ 
+t({\sf c}_1,\sigma) \cdot t({\sf c}_2,\lsyn {\sf c}_1 \rsyn \sigma) &
+	\mbox{if } {\sf c}={\sf c}_1\ ;\ {\sf c}_2 \\ 
+{\sf c} & 
+	\mbox{otherwise}
 \end{cases}
 \]
+
+We define the branching function, $\rho$, as follows (where $\pi_i$ projects a tuple onto its $i$th element):
+\[ 
+\rho({\sf c},\sigma,n) = \begin{cases} 
+({\sf b}_n,n+1) &
+	\mbox{if } {\sf c}={\sf if (b)\ \{ c_1 \}\ else\ \{ c_2 \}},\lsyn {\sf b} \rsyn\sigma = {\sf true} \\ 
+(\neg {\sf b}_n,n+1) &
+	\mbox{if } {\sf c}={\sf if (b)\ \{ c_1 \}\ else\ \{ c_2 \}},\lsyn {\sf b} \rsyn\sigma = {\sf false} \\ 
+(\neg {\sf b}_n,n+1) &
+	\mbox{if } {\sf c}={\sf while (b)\ \{ c_1 \}},\lsyn {\sf b} \rsyn\sigma = {\sf false} \\ 
+({\sf b}_n \wedge \pi_1(\rho({\sf c}_1\ ;\ {\sf c},\sigma,n+1)),k) &\mbox{if } {\sf c}={\sf while (b)\ \{ c_1 \}},\lsyn {\sf b} \rsyn\sigma = {\sf true} \\ 
+& \textit{where}\ k = \pi_2(\rho({\sf c}_1\ ;\ {\sf c},\sigma,n+1)) \\
+(\pi_1(\rho({\sf c}_1,\sigma,n)) \wedge  \pi_1(\rho({\sf c}_2,\lsyn {\sf c}_1 \rsyn \sigma,k_1)),k_2) &\mbox{if } {\sf c}={\sf c}_1\ ;\ {\sf c}_2 \\ 
+& \textit{where} \\
+& \quad k_1 = \pi_2(\rho({\sf c}_1,\sigma,n)) \\
+& \quad k_2 = \pi_2(\rho({\sf c}_2,\lsyn {\sf c}_1 \rsyn \sigma,k_1)) \\
+{\sf true} & \mbox{otherwise}
+\end{cases}
+\]
+Note that $\rho$ is fully deterministic. Though branching decisions are potentially dependent on the values returned by {\sf read()} calls, these are encoded as the state $\sigma$ (i.e., the second argument).
 
 \section{The Tainting Property}
 
@@ -67,6 +133,49 @@ $$
 Given trace $t$ and variable {\sf x}, we say that the tainting property holds w.r.t. $t$ and {\sf x} iff $t \models \{ \odot \rightarrow {\sf x} \}$.
 
 A sound solution is to maintain the set of all tainted variables at every point along the trace. The implication is to maintain a shadow variable $\overline{{\sf x}}$ per each program variable ${\sf x}$, and instrument every variable definition with another instruction for the purpose of taint tracking. 
+
+\section{Taint Tracking}
+
+Given program {\sf c} sans instrumentation with traces $T[{\sf c}]$ that defines variable {\sf x}, let $T^{\sf x}[{\sf c}] \subseteq T[{\sf c}]$ be the subset of traces $t$ of {\sf c} such that $t \models \odot \rightarrow {\sf x}$.
+
+\begin{defn}[Instrumentation for taint tracking] We refer to an instrumentation scheme $s$ as a \emph{taint tracking scheme} w.r.t. variable {\sf x} if 
+the scheme defines a privileged shadow variable $\overline{\sf x}_t$, such that 
+along any execution of the instrumented version {\sf c'} of {\sf c}, $\overline{\sf x}_t$ is defined and is live in the final state. $\overline{\sf x}_t$ denotes the judgment made by the scheme whether or not {\sf x} is tainted.
+\end{defn}
+
+\begin{defn}[Sound tracking scheme] We refer to the taint tracking scheme as \emph{sound} if for any trace $t$ of ${\sf c'}$, 
+	$\lsyn {\sf x} \rsyn \sigma' \implies t \models \odot \rightarrow {\sf x}$ , where $\sigma'$ denotes the final state in execution $t$.
+\end{defn}
+
+\begin{defn}[Complete tracking scheme] We refer to the taint tracking scheme as \emph{complete} if for any trace $t$ of ${\sf c'}$, 
+	$t \models \odot \rightarrow {\sf x} \implies \lsyn {\sf x} \rsyn \sigma'$, where $\sigma'$ denotes the final state in execution $t$.
+\end{defn}
+
+\begin{defn}[Precise tracking scheme] We refer to the taint tracking scheme as \emph{precise} if it is both sound and complete.
+\end{defn}
+
+\begin{lem}[Preciseness of naive tracking] The standard tracking scheme of allocating a shadow variable per each program variable is sound and complete. 
+\end{lem}
+
+\begin{defn}[Optimal taint condition] Given trace $t \in T^{\sf x}[{\sf c}]$,
+	corresponding to input state $\sigma$, $\pi_1(\rho({\sf c}, \sigma, 1))$ is
+	a conjunctive propositional formula $\bigwedge_i {\sf b}^t_i$. Define:
+	$$
+		\phi = \bigvee_{t \in T^{\sf x}[{\sf c}]} \bigwedge_i {\sf b}^t_i 
+	$$
+	We refer to $\psi$ as the \emph{optimal taint condition} if
+	$$
+	\psi \implies \phi \wedge (\forall \psi'.\ (\psi' \implies \phi) \implies (\psi \implies \psi'))
+	$$
+	That is, $\psi$ is the weakest logical condition that implies $\phi$.
+\end{defn}
+
+\begin{defn}[Optimal tracking scheme] A tracking scheme $s$ is \emph{sufficient} w.r.t. the optimal taint condition, $\psi$, if for any input state $\sigma$, the shadow final state $\overline{\sigma'}$ suffices to evaluate $\psi$. $s$ is \emph{optimal} if there is no other scheme $s'$, such that
+	$$
+	\forall \sigma \in \Sigma.\ \overline{\sigma'}_{s'} \sqsubseteq  \overline{\sigma'}_{s} \wedge \exists \sigma \in \Sigma.\ \overline{\sigma'}_{s'} \sqsubset  \overline{\sigma'}_{s}
+	$$
+	
+\end{defn}
 
 \subsection{Possible Cost Functions}
 
@@ -87,35 +196,34 @@ is $\odot \rightarrow {\sf y}$, there is no execution of ${\sf p}$ such that ${\
 \paragraph{Relaxation: Probabilistic Inference.} In the absence of the ability to prove that two variables are correlated, we may instead cast the problem into a probabilistic setting, which we can instantiate via testing. Assume for example that across $n$ (random and independent) executions of the program, a pair of variables has a high degree of correlation. We can utilize Bayesian reasoning or another form of statistical prediction to perform inference across variables/queries.
 
 \section{Problem Definition}
-\todo{Need to define the language with shadow variables. That is,
+Need to define the language with shadow variables. That is,
   define the syntax and semantics of the language. Syntax should allow
 assignments to shadow variables $\overline{x} := e$ where $e$ can
 contain both shadow variables and regular program variables. Let's
 assume/require that shadow variables are boolean valued. Note that
 normal assignment (i.e., to non-shadow variables) and tests of if and
-while statements cannot use shadow variables}
+while statements cannot use shadow variables.
 
-\todo{Define what it means for ${\sf c}'$ to be an instrumented version of {\sf c} (i.e.,
+Define what it means for ${\sf c}'$ to be an instrumented version of {\sf c} (i.e.,
 when you erase the assignments to shadow variables from ${\sf c}'$,
 you have exactly ${\sf c}$. Some simple results such as if we have an
 execution of ${\sf c}$ then we have an equivalent execution of ${\sf
   c}'$ and vice versa. That is, showing it really is just
-instrumentation and not changing anything fundamental about the computation.}
+instrumentation and not changing anything fundamental about the computation.
 
 Given a program {\sf c} and a variable {\sf x}, we are interested in
 knowing whether the execution of {\sf c} results in {\sf x} being
-tainted at the end of execution. \todo{I suggest for simplicity that
-  we restrict our attention to just terminating program executions.}
+tainted at the end of execution. I suggest for simplicity that
+  we restrict our attention to just terminating program executions.
 
 That is, we are interested in the sets $tainted = \{ t \mid t =
 t({\sf c},\sigma) \land t \models \{ \odot \rightarrow {\sf x} \} \}$ and
 $untainted = \{ t \mid
 t = t({\sf c},\sigma) \land t \not\models \{ \odot \rightarrow {\sf x} \} \}$
- \todo{I
-think we may want different notation for this, or something a bit more
-concise?}
-\todo{Note that $tainted$ and $untainted$ do not partition the set of
-traces, since some traces could be infinite. It may be even better to initially not think about loops...}
+I think we may want different notation for this, or something a bit more
+concise?
+Note that $tainted$ and $untainted$ do not partition the set of
+traces, since some traces could be infinite. It may be even better to initially not think about loops...
 
 We can say that instrumentation correctly determines taint for {\sf x}
 if we have ${\sf c}'$, which an instrumented version of {\sf c} such
@@ -132,7 +240,7 @@ Now we can define \emph{optimal taint instrumentation}, meaning that
 we have a correct instrumentation that is optimal in some cost
 function, e.g., size of shadow state, static number of assignments to
 shadow state, dynamic number of assignments to shadow state,
-... \todo{actually do this formally.}
+... actually do this formally.
 
 I(Steve) have some thoughts about heuristics for finding optimal
 instrumentation in the loop-free case, but probably not worth writing
@@ -145,8 +253,7 @@ it gives us a definition of how well we could possibly do in any
 actual implementation. \todo{Could we use information theory to
   approximate the number of bits that are needed? That is, if there is
 $n$ information theoretic bits required to distinguish tainted from
-untainted executions (assuming uniform distribution of input states),
-then it is likely(???) we will need at least $n$ physical bits, i.e., $n$
+untainted executions (assuming uniform distribution of input states), then it is likely(???) we will need at least $n$ physical bits, i.e., $n$
 shadow variables.}
 
 
@@ -163,5 +270,9 @@ instrumentation'' by considering the probability that instrumentation
 is correct. 
 
 \section{Practical tool}
+
+\section{Optimal solution}
+
+Let $\rho$ be the function that derives, given execution trace $t$, the branching points incident in $t$ and the truth value of the associated boolean conditions. We thus obtain for trace $t$ a sequence of the form: $[ \ldots , {\sf c}/{\sf b}, \ldots ]$, which --- assuming as we do that the program is fully deterministic --- can be reduced to $[ \ldots, {\sf b}, \ldots]$ without loss of information.
 
 \end{document}
