@@ -59,6 +59,12 @@ We assume, for simplicity, that programs are deterministic. The {\sf read()} fun
 								{\sf iexp} $\wedge$ {\sf iexp}\ $|$\ {\sf iexp} $\vee$ {\sf iexp}\ $|$\ $\neg${\sf iexp} & {\bf (iexp)} \\			 		  
 \end{tabular}
 
+\newcommand{\instrEras}{\ensuremath{eras}}
+\paragraph{Instrumentation erasure} We define function $\instrEras$ that takes an instrumented command and returns a non-instrumented command or $\nocommand$. Intuitively, the result of $\instrEras({\sf c'})$ is the result of removing all of the instrumentation commands, or $\nocommand$ if $c'$ consistent only of instrumentation commands.
+\begin{align*}
+  \instrEras(...) &= ...\\
+\end{align*}
+
 Note that shadow variables are boolean, and that shadow expressions cannot be assigned to regular variables. That is, shadow values cannot escape the shadow state. Stated differently, if program {\sf c} is identical to program {\sf c'} modulo shadow statements, then
 $$
 	\forall \sigma \in \Sigma.\ \lsyn {\sf c} \rsyn \sigma \equiv_{ns} \lsyn {\sf c'} \rsyn \sigma
