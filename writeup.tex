@@ -178,7 +178,7 @@ along any execution of the instrumented version {\sf c'} of {\sf c}, $\overline{
 	$$
 	We refer to $\psi$ as the \emph{optimal taint condition} if
 	$$
-	\psi \implies \phi \wedge (\forall \psi'.\ (\psi' \implies \phi) \implies (\psi \implies \psi'))
+	(\psi \implies \phi) \wedge (\forall \psi'.\ (\psi' \implies \phi) \implies (\psi \implies \psi'))
 	$$
 	That is, $\psi$ is the weakest logical condition that implies $\phi$.
 \end{defn}
