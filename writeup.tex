@@ -157,11 +157,11 @@ along any execution of the instrumented version {\sf c'} of {\sf c}, $\overline{
 \end{defn}
 
 \begin{defn}[Sound tracking scheme] We refer to the taint tracking scheme as \emph{sound} if for any trace $t$ of ${\sf c'}$, 
-	$\lsyn {\sf x} \rsyn \sigma' \implies t \models \odot \rightarrow {\sf x}$ , where $\sigma'$ denotes the final state in execution $t$.
+	$\lsyn {\sf \overline{x}_t} \rsyn \sigma' \implies t \models \odot \rightarrow {\sf x}$ , where $\sigma'$ denotes the final state in execution $t$.
 \end{defn}
 
 \begin{defn}[Complete tracking scheme] We refer to the taint tracking scheme as \emph{complete} if for any trace $t$ of ${\sf c'}$, 
-	$t \models \odot \rightarrow {\sf x} \implies \lsyn {\sf x} \rsyn \sigma'$, where $\sigma'$ denotes the final state in execution $t$.
+	$t \models \odot \rightarrow {\sf x} \implies \lsyn {\sf \overline{x}_t} \rsyn \sigma'$, where $\sigma'$ denotes the final state in execution $t$.
 \end{defn}
 
 \begin{defn}[Precise tracking scheme] We refer to the taint tracking scheme as \emph{precise} if it is both sound and complete.
@@ -287,5 +287,15 @@ is correct.
 \section{Optimal solution}
 
 Let $\rho$ be the function that derives, given execution trace $t$, the branching points incident in $t$ and the truth value of the associated boolean conditions. We thus obtain for trace $t$ a sequence of the form: $[ \ldots , {\sf c}/{\sf b}, \ldots ]$, which --- assuming as we do that the program is fully deterministic --- can be reduced to $[ \ldots, {\sf b}, \ldots]$ without loss of information.
+
+\section{Random Thoughts}
+
+\begin{itemize}
+	\item Taint tracking depends only on the path (not the values).
+	\item Can we prove that we can reduce standard taint tracking to tracking of path conditions? (There is no additional complexity cost.)
+	\item We start from the loop-free case. We can prove soundness and completeness.
+	\item When adding in loops, we can add boolean variables but with abstraction.
+	\item Can we use a temportal logic that characterizes precisely/imprecisely the taint-related branching events, then we can come up with an effective scheme.
+\end{itemize}
 
 \end{document}
