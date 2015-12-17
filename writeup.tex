@@ -60,6 +60,7 @@ We assume, for simplicity, that programs are deterministic. The {\sf read()} fun
 \end{tabular}
 
 \newcommand{\instrEras}{\ensuremath{eras}}
+\newcommand{\nocommand}{\ensuremath{\epsilon}}
 \paragraph{Instrumentation erasure} We define function $\instrEras$ that takes an instrumented command and returns a non-instrumented command or $\nocommand$. Intuitively, the result of $\instrEras({\sf c'})$ is the result of removing all of the instrumentation commands, or $\nocommand$ if $c'$ consistent only of instrumentation commands.
 \begin{align*}
   \instrEras(...) &= ...\\
