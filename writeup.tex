@@ -36,6 +36,7 @@ We assume, for simplicity, that programs are deterministic. The {\sf read()} fun
 		 & 		  & {\sf z := bexp}\ $|$ & {\bf (basgn)} \\
 		 & 	 & {\sf if (bexp) \{ c \} else \{ c \}}\ $|$ & {\bf (condition)}\\
 		 & 	 & {\sf while (bexp) \{ c \}}\ $|$ & {\bf (loop)}\\
+		 		 & 	 & {\sf skip}\ $|$ & {\bf (nop)}\\
 		 & 	 & {\sf c\ ;\ c} & {\bf (composition)}\\
 {\sf aexp} & ::= & $n$\ $|$\ {\sf read()}\ $|$\ {\sf i aop j} & {\bf (aexp)} \\
 {\sf aop} & ::= & $+\ |\ -\ |\ \times\ |\ /\ |\ \%$ & {\bf (aop)} \\
@@ -47,8 +48,13 @@ We assume, for simplicity, that programs are deterministic. The {\sf read()} fun
 \subsection{Syntax with Instrumentation Commands}
 
 \begin{tabular}{rclc}
-	{\sf c'}	 & ::= & {\sf c}\ $|$ & {\bf (core)}\\
-		 		  &  	  & ${\sf \overline{z} := iexp}$ & {\bf (shadow)} \\
+	{\sf c'} & ::= & {\sf i := aexp}\ $|$ & {\bf (aasgn)}\\
+	& 		  & {\sf z := bexp}\ $|$ & {\bf (basgn)} \\
+	& 	 & {\sf if (bexp) \{ c' \} else \{ c' \}}\ $|$ & {\bf (condition)}\\
+	& 	 & {\sf while (bexp) \{ c' \}}\ $|$ & {\bf (loop)}\\
+			 		 & 	 & {\sf skip}\ $|$ & {\bf (nop)}\\
+	& 	 & {\sf c'\ ;\ c'} & {\bf (composition)}\\
+			 		  &  	  & ${\sf \overline{z} := iexp}$ & {\bf (shadow)} \\
    {\sf iexp}  & ::=  & {\sf bexp}\ $|$\ ${\sf \overline{z}}$\ $|$\
 								{\sf iexp} $\wedge$ {\sf iexp}\ $|$\ {\sf iexp} $\vee$ {\sf iexp}\ $|$\ $\neg${\sf iexp} & {\bf (iexp)} \\			 		  
 \end{tabular}
