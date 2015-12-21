@@ -4,6 +4,8 @@
 \usepackage{amsthm}
 \usepackage{amssymb}
 \usepackage{xcolor}
+\usepackage{proof}
+\usepackage{amssymb}
 
 \newcommand{\lsyn}{[\![}
 \newcommand{\rsyn}{]\!]}
@@ -38,7 +40,9 @@ We assume, for simplicity, that programs are deterministic. The {\sf read()} fun
 		 & 	 & {\sf while (bexp) \{ c \}}\ $|$ & {\bf (loop)}\\
 		 		 & 	 & {\sf skip}\ $|$ & {\bf (nop)}\\
 		 & 	 & {\sf c\ ;\ c} & {\bf (composition)}\\
-{\sf aexp} & ::= & $n$\ $|$\ {\sf read()}\ $|$\ {\sf i aop j} & {\bf (aexp)} \\
+{\sf aexp} & ::= & $n$\ $|$\ {\sf i}\ $|$\
+%{\sf read()}\ $|$\ 
+{\sf i aop j} & {\bf (aexp)} \\
 {\sf aop} & ::= & $+\ |\ -\ |\ \times\ |\ /\ |\ \%$ & {\bf (aop)} \\
 {\sf bexp} & ::= & {\sf true}\ $|$\ {\sf false} $|$\ {\sf i bop j}\ $|$\ {\sf z}\ $|$ & \\ % {\bf (bconst)} \\
 & 		 & {\sf bexp} $\wedge$ {\sf bexp}\ $|$\ {\sf bexp} $\vee$ {\sf bexp}\ $|$\ $\neg${\sf bexp} & {\bf (bexp)} \\ % {\bf (propositional)} \\
@@ -59,18 +63,32 @@ We assume, for simplicity, that programs are deterministic. The {\sf read()} fun
 								{\sf iexp} $\wedge$ {\sf iexp}\ $|$\ {\sf iexp} $\vee$ {\sf iexp}\ $|$\ $\neg${\sf iexp} & {\bf (iexp)} \\			 		  
 \end{tabular}
 
-\newcommand{\instrEras}{\ensuremath{eras}}
-\newcommand{\nocommand}{\ensuremath{\epsilon}}
-\paragraph{Instrumentation erasure} We define function $\instrEras$ that takes an instrumented command and returns a non-instrumented command or $\nocommand$. Intuitively, the result of $\instrEras({\sf c'})$ is the result of removing all of the instrumentation commands, or $\nocommand$ if $c'$ consistent only of instrumentation commands.
-\begin{align*}
-  \instrEras(...) &= ...\\
-\end{align*}
+\newcommand{\instrEras}{\textnormal{$\ensuremath{eras}$}}
+\newcommand{\nocommand}{\ensuremath{\textsf{skip}}}
+\newcommand{\cprime}{{\sf c'}}
+\newcommand{\cdprime}{{\sf c''}}
+\newcommand{\bexp}{{\sf bexp}}
+\paragraph{Instrumentation Erasure} We define function \instrEras\ that takes an instrumented command and returns a non-instrumented command or $\nocommand$. Intuitively, the result of \instrEras({\sf c'}) is the result of removing all of the instrumentation commands, or $\nocommand$ if \cprime\ consists only of instrumentation commands.
+\[
+  \instrEras(\cprime) = \begin{cases}
+  {\sf if (\bexp)\ \{\ \instrEras(\cdprime)\ \}\ else\ \{\ \instrEras(\cdprime)\ \}}
+  & \mbox{if } \cprime={\sf if (\bexp)\ \{ \cdprime \}\ else\ \{ \cdprime \}} \\
+  \instrEras(\cdprime)\ ;\ \instrEras(\cdprime)
+  & \mbox{if } \cprime={\sf \cdprime\ ;\ \cdprime} \\
+{\sf while\ (\bexp)\ \{\ \instrEras(\cdprime)\ \}}
+& \mbox{if } \cprime={\sf while\ (\bexp)\ \{ \cdprime \}} \\
+	\nocommand
+  & \mbox{if } \cprime = {\sf \textnormal{$\overline{\sf z}$ := iexp}} \\
+	\cprime
+    & \mbox{otherwise} \\
+  \end{cases}
+\]
 
 Note that shadow variables are boolean, and that shadow expressions cannot be assigned to regular variables. That is, shadow values cannot escape the shadow state. Stated differently, if program {\sf c} is identical to program {\sf c'} modulo shadow statements, then
 $$
-	\forall \sigma \in \Sigma.\ \lsyn {\sf c} \rsyn \sigma \equiv_{ns} \lsyn {\sf c'} \rsyn \sigma
+	\forall \sigma \in \Sigma.\ \lsyn {\sf c} \rsyn \sigma \equiv \lsyn {\sf \instrEras(c')} \rsyn \sigma
 $$
-That is, {\sf c} and {\sf c'} are semantically equivalent up to the values assigned to shadow values, which is our intention with $\equiv_{ns}$ ($ns$ standing for ``no shadow'').
+That is, {\sf c} and {\sf c'} are semantically equivalent up to the values assigned to shadow values.
 
 %& 		 & {\sf x := $n$}\ $|$ & {\bf (aconst)}\\
 %& 		 & {\sf x := {\sf b}}\ $|$ & {\bf (abool)}\\
@@ -128,24 +146,50 @@ We define the branching function, $\rho$, as follows (where $\pi_i$ projects a t
 {\sf true} & \mbox{otherwise}
 \end{cases}
 \]
-Note that $\rho$ is fully deterministic. Though branching decisions are potentially dependent on the values returned by {\sf read()} calls, these are encoded as the state $\sigma$ (i.e., the second argument).
+Note that $\rho$ is fully deterministic. Though branching decisions are potentially dependent on input values, these are encoded into the state $\sigma$ (i.e., the second argument).
 
+\newcommand{\prog}{{\sf c}}
+\newcommand{\progp}{{\sf c'}}
+\newcommand{\flow}[3]{\textsf{#1 $\stackrel{\sf #2}{\rightarrow}$ #3}}
+\newcommand{\ivar}{\textsf{i}}
+\newcommand{\jvar}{\textsf{j}}
+\newcommand{\kvar}{\textsf{k}}
 \section{The Tainting Property}
 
-$$
-\begin{array}{rrcl}
-& {\sf x := input()} & \models & \{ \odot \rightarrow {\sf x} \} \\
-& {\sf x := y} & \models & \{ {\sf y} \rightarrow {\sf x} \}\\
-& {\sf x := y\ aexp\ z} & \models & \{ {\sf y} \rightarrow {\sf x},{\sf z} \rightarrow {\sf x} \} \\
-& \textsf{x := $n$} & \models & \emptyset\\
-t \models S,{\sf x := \ldots} \models S' \Rightarrow & t \cdot [{\sf x := \ldots}] & \models & (S \setminus \{ \_ \rightarrow {\sf x} \}) \cup S' \\
-t \models S,S' \subseteq S \Rightarrow & t & \models & S' \\
-\end{array}
-$$
+Given program \prog\ and initial state $\sigma_0$, taint propagation is captured by graph $G = f(\emptyset)$, such that $t(\nocommand\ ;\ \prog,\sigma_0) \models f$, according to the following rules:
+\[
+\infer{t(\nocommand,\sigma) \models \lambda G.\ G \cup \{ \flow{i}{i}{i} \colon \ivar \in {\sf dom}(\sigma) \}}{\sigma = \sigma_0}
+\]
+\[
+\infer{t(\nocommand,\sigma) \models \lambda G.\ G}{\sigma \neq \sigma_0}
+\]
+\[
+\infer{t({\sf i := j},\sigma) \models \lambda G.\ G \cup \{ \flow{j}{k}{i} \colon \exists {\sf l}.\ \flow{l}{k}{j} \in G \}}{}
+\]
+\[
+\infer{t({\sf i := j\ aop\ k},\sigma) \models \lambda G.\ G \cup \{ \flow{j}{n}{i} \colon \exists {\sf l}.\ \flow{l}{n}{j} \in G \} \cup \{ \flow{k}{n}{i} \colon \exists {\sf l}.\ \flow{l}{n}{k} \in G \}}{}
+\]
+\[
+\infer{t({\sf i := \textnormal{$n$}},\sigma) \models \lambda G.\ G \setminus \{ \flow{j}{k}{i} \colon \jvar,\kvar \in {\sf dom}(\sigma) \}}{}
+\]
+\[
+\infer{t(\prog,\sigma) \cdot t(\progp,\sigma') \models f' \cdot f}{t(\prog,\sigma) \models f,
+	t(\progp,\sigma') \models f',\lsyn \prog \rsyn \sigma = \sigma'}
+\]
 
-Given trace $t$ and variable {\sf x}, we say that the tainting property holds w.r.t. $t$ and {\sf x} iff $t \models \{ \odot \rightarrow {\sf x} \}$.
+We are interested to answer queries of the form $\ivar \leadsto \jvar$. As we state below, this is straightforward to evaluate given $G$.
 
-A sound solution is to maintain the set of all tainted variables at every point along the trace. The implication is to maintain a shadow variable $\overline{{\sf x}}$ per each program variable ${\sf x}$, and instrument every variable definition with another instruction for the purpose of taint tracking. 
+\begin{lem}
+	Given program \prog\ and initial state $\sigma_0$, let $t(\nocommand\ ;\ \prog, \sigma_0) \models f$ and $G=f(\emptyset)$. Then
+	$$
+		\ivar \leadsto \jvar \Longleftrightarrow \exists {\sf l}.\ \flow{l}{\ivar}{\jvar} \in G
+	$$
+	\begin{proof}
+		Need proof ...
+	\end{proof}
+\end{lem}
+
+A sound solution is to maintain the set of all tainted variables at every point along the trace. This amounts to maintaining a shadow variable $\overline{{\sf x}}$ per each program variable ${\sf x}$ and instrumenting every variable definition with another instruction for the purpose of taint tracking. 
 
 \section{Taint Tracking}
 
