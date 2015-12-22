@@ -6,6 +6,7 @@
 \usepackage{xcolor}
 \usepackage{proof}
 \usepackage{amssymb}
+\usepackage{listings}
 
 \newcommand{\ignore}[1]{}
 \newcommand{\lsyn}{[\![}
@@ -16,6 +17,7 @@
 \newtheorem{thm}{Theorem}
 
 \newtheorem{lem}{Lemma}
+\newtheorem{ex}{Example}
 
 \newcommand{\todo}[1]{textnormal{{\color{black} [[ #1 ]]}}}
 %\newcommand{\todo}[1]{#1}
@@ -217,6 +219,91 @@ A taint instrumentation scheme $s$ accepts as input a program \prog\ without ins
 	where $\prog'_s$ and $\prog'_{s'}$ are the instrumented versions of \prog\ due to $s$ and $s'$, respectively.
 	That is, the number of instrumentation commands introduced by $s$ is minimal.
 \end{defn}
+
+\newcommand{\cupdot}{\mathbin{\mathaccent\cdot\cup}}
+
+\newcommand{\Tp}{\textnormal{$T^p$}}
+\newcommand{\Tn}{\textnormal{$T^n$}}
+
+\section{Reasoning about Optimality via Control Flow}
+
+Given program \prog\ with set $T$ of finite traces (and potentially other infinite traces), we partition $T$ in two:
+$$
+T = \{ t \colon t \models \query{\xvar}{\yvar} \} \cupdot \{ t \colon t \not\models \query{\xvar}{\yvar} \}
+$$
+where we denote the LHS set by \Tp\ and the RHS set by \Tn.
+
+For each trace $t \in T$, there exists $\sigma_0 \in \Sigma$ such that
+\begin{itemize}
+	\item $t=t(\prog,\sigma_0)$
+	\item $[ \ldots, {\sf b}^t_i, \ldots ] = \rho(\prog,\sigma_0,1)$ (where ${\sf b}^t_i$ is a branching literal)
+\end{itemize}
+That is, $\rho$ collects the branching decisions along $t$. (Note that $\sigma_0$ is not necessarily unique.)
+
+Given the above, we can describe the exact branching conditions that give rise to taint flow between \xvar and \yvar as follows:
+\begin{equation}\label{Eq:preciseCond}
+	\phi = \bigvee_{t \in \Tp} \bigwedge_i {\sf b}^t_i 
+\end{equation}
+That is, each trace is a conjunction of branching literals. $\phi$ is the disjunction of all these conjunctions, essentially enumerating all traces that carry taint from \xvar\ to \yvar.
+
+Our goal is to find the essential branching decisions that characterize \emph{precisely} when \query{\xvar}{\yvar}. We state this problem formally in terms of $\phi$ above.
+
+\newcommand{\asgn}{\textnormal{$\mathbb{A}$}}
+\newcommand{\asgnL}{\textnormal{$\mathbb{A}_L$}}
+\newcommand{\asgnLP}{\textnormal{$\mathbb{A}_{L'}$}}
+
+\begin{defn}[The optimality order] Let $\psi$ be a formula ranging over set $L$ of atoms, and $\psi'$ another formula. We define partial order $\prec$, such that $\psi' \prec \psi$ if the following three conditions hold:
+	\item $\psi'$ ranges over set $L' \subseteq L$ of atoms.
+	\item Any assignment \asgnLP\ to the literals $L'$ such that $\lsyn \psi' \rsyn_{\asgnLP}$ can be completed into an assignment \asgnL\ to the literals $L$ such that $\lsyn \psi \rsyn_{\asgnL}$.
+	\item For any assignment \asgnLP\ to the literals $L'$ such that $\neg \lsyn \psi' \rsyn_{\asgnLP}$, there is no assignment \asgnL\ to the literals $L$ that is a completion of \asgnLP\ such that $\lsyn \psi \rsyn_{\asgnL}$.
+\end{defn}
+
+\begin{thm}[Optimal instrumentation]\label{Th:optimal} A formula $\psi$ satisfying
+	\begin{itemize}
+		\item $\psi \prec \phi$ (where $\phi$ is defined above in Equation \ref{Eq:preciseCond})
+		\item $\forall\ \psi'.\ \psi' \preceq \psi \Rightarrow \psi' = \psi$
+	\end{itemize}
+	captures the precise set of instrumentation points. We refer to $\psi$ as the \emph{optimal instrumentation formula}. Further, given an arbitrary program \prog, finding a corresponding formula $\psi$ is undecidable. Finally, $\psi$ is not guaranteed to be unique.
+\end{thm}
+
+\newcommand{\bi}[1]{\textnormal{${\sf b}_{#1}$}}
+
+\begin{ex}[Single instrumentation point] The example in Figure \ref{Fi:example} illustrates the benefit of the optimal scheme. We end up instrumenting only one branching point: \bi{0}. Indeed, the optimal formula, as specified in Theorem \ref{Th:optimal} above, is simply $\psi = \bi{0}$. The original formula $\phi$ is significantly more complex, having to account for all the downstream branching points, which are irrelevant to the query at hand. Naive taint tracking is also arbitrarily worse, since we have to attach shadow variables (and commands) to all the variables $x_i$.
+\end{ex}
+
+\begin{figure}
+\begin{lstlisting}[language=Java,escapeinside={<>}]
+// original variables: <\xvar>,<\xvar$_1$>,<\xvar$_2$>,...,<\xvar$_n$>,<\yvar>
+// shadow variables: <\shadow{x}>, <\shadow{qxy}>
+if (<\xvar> > 0) { // <\bi{0}>
+  /* INSTRUMENTATION - BGN */
+  <\shadow{x}> := true;
+  /* INSTRUMENTATION - END */
+  <\xvar$_1$> := x+1; // flow from <\xvar> to <\xvar$_1$>
+  <\xvar$_2$> := x<$_1$>+2; // flow from <\xvar$_1$> to <\xvar$_2$>
+  ...
+  <\xvar$_n$> := <\xvar$_{n-1}$> + <$n$>; // flow from <\xvar$_{n-1}$> to <\xvar$_n$> 
+  if (<\xvar$_1$> > 1) { <\xvar$_1$> = <\xvar$_1$>-1; } // <\bi{1}>
+  if (<\xvar$_2$> > 2) { <\xvar$_2$> = <\xvar$_2$>-2; } // <\bi{2}>
+  ...
+  if (<\xvar$_n$> > n) { <\xvar$_n$> = <\xvar$_n$>-<$n$>; } // <\bi{n}>       
+} else {
+  /* INSTRUMENTATION - BGN */
+  <\shadow{x}> := false;
+  /* INSTRUMENTATION - END */
+  <\xvar$_n$> = 0; }
+<\yvar> = <\xvar$_n$>;
+/* INSTRUMENTATION - BGN */
+<\shadow{qxy}> := <\shadow{x}>;
+/* INSTRUMENTATION - END */
+\end{lstlisting}
+\caption{\label{Fi:example}Program that conditionally carries taint from \xvar\ to \yvar}
+\end{figure}
+
+\begin{thm}[Decidability for loop-free programs] Assume that program \prog\ is loop free (as in Example \ref{Fi:example}). Then the problem of finding an optimal instrumentation formula $\psi$ is decidable, and the resulting instrumentation scheme is guaranteed to be optimal.
+\end{thm}
+
+
 
 
 \ignore{
