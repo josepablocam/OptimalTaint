@@ -229,7 +229,10 @@ A taint instrumentation scheme $s$ accepts as input a program \prog\ without ins
 
 Given program \prog\ with set $T$ of finite traces (and potentially other infinite traces), we partition $T$ in two:
 $$
-T = \{ t \colon t \models \query{\xvar}{\yvar} \} \cupdot \{ t \colon t \not\models \query{\xvar}{\yvar} \}
+\begin{array}{rccc}
+T = & \{ t \colon t \models \query{\xvar}{\yvar} \} & \cupdot & \{ t \colon t \not\models \query{\xvar}{\yvar} \} \\
+     &  \underbrace{~~~~~~~~~~~~~~~~~}_{\Tp}  &    & \underbrace{~~~~~~~~~~~~~~~~~}_{\Tn} \\
+\end{array}
 $$
 where we denote the LHS set by \Tp\ and the RHS set by \Tn.
 
@@ -242,28 +245,56 @@ That is, $\rho$ collects the branching decisions along $t$. (Note that $\sigma_0
 
 Given the above, we can describe the exact branching conditions that give rise to taint flow between \xvar and \yvar as follows:
 \begin{equation}\label{Eq:preciseCond}
-	\phi = \bigvee_{t \in \Tp} \bigwedge_i {\sf b}^t_i 
+	\phi^P = \bigvee_{t \in \Tp} \bigwedge_i {\sf b}^t_i 
 \end{equation}
-That is, each trace is a conjunction of branching literals. $\phi$ is the disjunction of all these conjunctions, essentially enumerating all traces that carry taint from \xvar\ to \yvar.
+That is, each trace is a conjunction of branching literals. $\phi^P$ is the disjunction of all these conjunctions, essentially enumerating all traces that carry taint from \xvar\ to \yvar.
+Analogously, we define
+\begin{equation}\label{Eq:preciseNegCond}
+	\phi^N = \bigvee_{t \in \Tn} \bigwedge_i {\sf b}^t_i 
+\end{equation}
 
-Our goal is to find the essential branching decisions that characterize \emph{precisely} when \query{\xvar}{\yvar}. We state this problem formally in terms of $\phi$ above.
+Our goal is to find the essential branching decisions that characterize \emph{precisely} when \query{\xvar}{\yvar}. We state this problem formally in terms of $\phi^P$ and $\phi^N$ above.
 
 \newcommand{\asgn}{\textnormal{$\mathbb{A}$}}
 \newcommand{\asgnL}{\textnormal{$\mathbb{A}_L$}}
 \newcommand{\asgnLP}{\textnormal{$\mathbb{A}_{L'}$}}
 
+Recall the definition of an \emph{interpolant} (aka \emph{Craig interpolant}) \cite{XXX}. Given pair $(A,B)$ of propositional formulas, propositional formula $P$ is an interpolant for this pair iff
+\begin{enumerate}
+	\item $A \implies P$;
+	\item $P \wedge B$ is unsatisfiable; and
+	\item $P$ refers only to the common variables of $A$ and $B$.
+\end{enumerate}
+
+As we are about to argue, we are interested in a formula $\psi$, such that
+\begin{enumerate}
+	\item $\phi^P \implies \psi$;
+	\item $\psi \wedge \phi^N$ is unsatisfiable; and
+	\item $\psi$ refers only to the common variables of $\phi^P$ and $\phi^N$; and
+	\item $\psi$ is minimal (i.e., there is no formula $\psi'$ satisfying the conditions above, such that $\psi \implies \psi'$).
+\end{enumerate}
+That is, we are interested in a \emph{minimal} interpolant for the pair $(\phi^P,\phi^N)$.
+The argument, stated simply, is that we seek to converge on the weakest differentiation between benign and tainted traces (that is, w.r.t. \query{\xvar}{\yvar}); hence the applicability of Craig interpolation.
+
+\ignore{
 \begin{defn}[The optimality order] Let $\psi$ be a formula ranging over set $L$ of atoms, and $\psi'$ another formula. We define partial order $\prec$, such that $\psi' \prec \psi$ if the following three conditions hold:
 	\item $\psi'$ ranges over set $L' \subseteq L$ of atoms.
 	\item Any assignment \asgnLP\ to the literals $L'$ such that $\lsyn \psi' \rsyn_{\asgnLP}$ can be completed into an assignment \asgnL\ to the literals $L$ such that $\lsyn \psi \rsyn_{\asgnL}$.
 	\item For any assignment \asgnLP\ to the literals $L'$ such that $\neg \lsyn \psi' \rsyn_{\asgnLP}$, there is no assignment \asgnL\ to the literals $L$ that is a completion of \asgnLP\ such that $\lsyn \psi \rsyn_{\asgnL}$.
 \end{defn}
+}
 
-\begin{thm}[Optimal instrumentation]\label{Th:optimal} A formula $\psi$ satisfying
-	\begin{itemize}
-		\item $\psi \prec \phi$ (where $\phi$ is defined above in Equation \ref{Eq:preciseCond})
-		\item $\forall\ \psi'.\ \psi' \preceq \psi \Rightarrow \psi' = \psi$
-	\end{itemize}
-	captures the precise set of instrumentation points. We refer to $\psi$ as the \emph{optimal instrumentation formula}. Further, given an arbitrary program \prog, finding a corresponding formula $\psi$ is undecidable. Finally, $\psi$ is not guaranteed to be unique.
+\begin{thm}[Guarantees thanks to minimal interpolant]\label{Th:optimal} 
+	The following statements hold true of a formula $\psi$ that is a minimal interpolant for $(\phi^P,\phi^N)$:
+	\begin{enumerate}
+		\item $\psi$ captures the precise set of instrumentation points to evaluate \query{\xvar}{\yvar}. (Hence we refer to $\psi$ as the \emph{optimal instrumentation formula}.)
+		\item In general, computing $\prog$ is an undecidable problem. (Note that $\phi^P$ and $\phi^N$ are not necessarily finite.)
+		\item For a program \prog\ with finitely many traces, computing $\psi$ is decidable yet NP-hard.
+		\item $\psi$ is not unique in general.
+	\end{enumerate}
+	\begin{proof}
+		Write me! (O: not sure about claims)
+	\end{proof}
 \end{thm}
 
 \newcommand{\bi}[1]{\textnormal{${\sf b}_{#1}$}}
@@ -300,8 +331,13 @@ if (<\xvar> > 0) { // <\bi{0}>
 \caption{\label{Fi:example}Program that conditionally carries taint from \xvar\ to \yvar}
 \end{figure}
 
+\ignore{
 \begin{thm}[Decidability for loop-free programs] Assume that program \prog\ is loop free (as in Example \ref{Fi:example}). Then the problem of finding an optimal instrumentation formula $\psi$ is decidable, and the resulting instrumentation scheme is guaranteed to be optimal.
+	\begin{proof}
+		Write me!
+	\end{proof}
 \end{thm}
+}
 
 
 
