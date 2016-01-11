@@ -22,6 +22,10 @@
 \newcommand{\todo}[1]{textnormal{{\color{black} [[ #1 ]]}}}
 %\newcommand{\todo}[1]{#1}
 
+% A command to highlight changes made by Jose as per email with Dr. Tripp
+\newcommand{\jose}[1]{{\textbf{\color{blue} #1}}}
+
+
 %opening
 \title{Tight Taint Tracking}
 \author{}
@@ -165,7 +169,7 @@ Note that $\rho$ is fully deterministic. Though branching decisions are potentia
 
 \subsection{The \query{\xvar}{\yvar} Judgment}
 
-Given program \prog\ and initial state $\sigma_0$, we are interested in queries of the form \query{\xvar}{\yvar}. Assuming the execution of \prog\ starting from $\sigma_0$ terminates, \query{\xvar}{\yvar} denotes that the value of \yvar\ in $\sigma_0$ influences the value of \xvar\ through a sequence of assignments. Formally, the judgment \query{\xvar}{\yvar} consists of the following rules:
+Given program \prog\ and initial state $\sigma_0$, we are interested in queries of the form \query{\xvar}{\yvar}. Assuming the execution of \prog\ starting from $\sigma_0$ terminates, \query{\xvar}{\yvar} denotes \jose{that the value of \xvar\ in $\sigma_0$ influences the value of \yvar\ }through a sequence of assignments. Formally, the judgment \query{\xvar}{\yvar} consists of the following rules:
 \[
 \infer{\epsilon \models \query{\xvar}{\xvar}}{}
 \]
@@ -184,9 +188,11 @@ Given program \prog\ and initial state $\sigma_0$, we are interested in queries 
 
 A sound solution is to maintain the set of all tainted variables at every point along the trace. This amounts to maintaining a shadow variable $\overline{{\sf x}}$ per each program variable ${\sf x}$ and instrumenting every variable definition with another instruction for the purpose of taint tracking. 
 
+\jose{Note that this approach can be extended to handle multiple queries of the form \query{\xvar}{\yvar} by creating shadow variables indexed by the appropriate query.}
+
 \subsection{Sound, Complete, Precise and Optimal Tracking Schemes}
 
-A taint instrumentation scheme $s$ accepts as input a program \prog\ without instrumentation (i.e., based on the core grammar) as well as a query \query{\xvar}{\yvar}, and outputs an instrumented version \progp\ of \prog\ (i.e., according to the extended grammar). $s$ has the full discretion to insert whatever instrumentation statements it deems needed. Our sole assumption is that $s$ introduces, and maintaints, a privileged shadow variable
+A taint instrumentation scheme $s$ accepts as input a program \prog\ without instrumentation (i.e., based on the core grammar) as well as a query \query{\xvar}{\yvar}, and outputs an instrumented version \progp\ of \prog\ (i.e., according to the extended grammar). $s$ has the full discretion to insert whatever instrumentation statements it deems needed. Our sole assumption is that $s$ introduces, and maintains, a privileged shadow variable
 \shadow{qxy}, such that in every terminating execution of \progp, with final state $\sigma'$, $\lsyn$\shadow{qxy}$\rsyn \sigma'$ denotes the determination by $s$ whether or not \query{\xvar}{\yvar}.
 
 \begin{defn}[Sound tracking scheme] We refer to $s$ as being a \emph{sound} tracking scheme if
@@ -243,7 +249,7 @@ For each trace $t \in T$, there exists $\sigma_0 \in \Sigma$ such that
 \end{itemize}
 That is, $\rho$ collects the branching decisions along $t$. (Note that $\sigma_0$ is not necessarily unique.)
 
-Given the above, we can describe the exact branching conditions that give rise to taint flow between \xvar and \yvar as follows:
+Given the above, we can describe the exact branching conditions that give rise to taint flow between \xvar\ and \yvar\ as follows:
 \begin{equation}\label{Eq:preciseCond}
 	\phi^P = \bigvee_{t \in \Tp} \bigwedge_i {\sf b}^t_i 
 \end{equation}
@@ -259,7 +265,7 @@ Our goal is to find the essential branching decisions that characterize \emph{pr
 \newcommand{\asgnL}{\textnormal{$\mathbb{A}_L$}}
 \newcommand{\asgnLP}{\textnormal{$\mathbb{A}_{L'}$}}
 
-Recall the definition of an \emph{interpolant} (aka \emph{Craig interpolant}) \cite{XXX}. Given pair $(A,B)$ of propositional formulas, propositional formula $P$ is an interpolant for this pair iff
+Recall the definition of an \emph{interpolant} (aka \emph{Craig interpolant}) \cite{XXX}. Given a pair $(A,B)$ of propositional formulas, \jose{such that $A$ and $B$ are inconsistent}, propositional formula $P$ is an interpolant for this pair iff
 \begin{enumerate}
 	\item $A \implies P$;
 	\item $P \wedge B$ is unsatisfiable; and
