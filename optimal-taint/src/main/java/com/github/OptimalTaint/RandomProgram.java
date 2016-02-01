@@ -112,7 +112,6 @@ public class RandomProgram {
                 code.addAll(condition(p));
                 break;
             case LOOP:
-                //code.addAll(loop(p));
                 // currently using a finite loop function to avoid
                 // non-termination and javac errors for unreachable code.
                 code.addAll(finiteLoop(p));
@@ -121,7 +120,10 @@ public class RandomProgram {
                 code.add(nop(p));
                 break;
             case COMPOSITION:
-                code.addAll(composition(p));
+                // composition can lead to infinite loops, so stop generating code if done
+                if(!p.done()) {
+                    code.addAll(composition(p));
+                }
                 break;
         }
 
