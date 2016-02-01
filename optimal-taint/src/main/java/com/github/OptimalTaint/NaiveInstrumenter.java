@@ -1,5 +1,6 @@
 package com.github.OptimalTaint;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -18,8 +19,7 @@ public class NaiveInstrumenter implements Instrumenter {
 
     public String getLVal(String code) {
         String typeAnnotated = code.split(assignmentOp)[0];
-        String lval = typeAnnotated.replace("int", "").replaceAll("\\s+", "");
-        return lval;
+        return typeAnnotated.replace("int", "").replaceAll("\\s+", "");
     }
 
     public String getRVal(String code) {
@@ -38,16 +38,16 @@ public class NaiveInstrumenter implements Instrumenter {
     }
 
     public List<String> instrument(ProgramState p,  List<String> program) {
-        for (int i = 0 ; i < program.size(); i++) {
-            String codeFragment = program.get(i);
+        List<String> instrumentedProgram = new ArrayList<String>();
 
+        for (String codeFragment : program) {
             if (isVarDefinition(codeFragment)) {
-                String instrumentedCode =  modify(codeFragment);
-                // replace code with instrumented version
-                program.set(i, instrumentedCode);
+                // instrument where appropriate (i.e. each variable definition)
+                codeFragment = modify(codeFragment);
             }
+            // add to instrumented version
+            instrumentedProgram.add(codeFragment);
         }
-
-        return program;
+        return instrumentedProgram;
     }
 }
