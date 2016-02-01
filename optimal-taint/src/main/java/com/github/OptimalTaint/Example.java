@@ -2,9 +2,10 @@ package com.github.OptimalTaint;
 
 import java.util.List;
 
+/**
+ * Simple example showing how to use classes created
+ */
 public class Example {
-
-    // Distribution of rules and probabilities
     public static void main(String[] args) {
         // our random program follows a uniform distribution for each non-terminal
         Grammar g = new UniformGrammar();
@@ -26,7 +27,7 @@ public class Example {
             i = new NoInstrumenter();
         }
         // generate code according to our distribution
-        // create a new program state with a mininmum of 10 non-skip lines (might result in more)
+        // create a new program state with a mininmum of 2 non-skip lines (might result in more)
         // and a seed for reproducibility purposes
         ProgramState p = new ProgramState(2, 10);
         List<String> code = r.sample(p);
