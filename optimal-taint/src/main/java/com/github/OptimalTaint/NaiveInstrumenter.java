@@ -31,7 +31,7 @@ public class NaiveInstrumenter implements Instrumenter {
         String rval = getRVal(codeFragment);
         String code = "int " + lval + " = ";
         // instrumnent from start, so we can track dependencies
-        code += "MultiTainter.getTaintedInt(0, " + "\"" + lval + "\");\n";
+        code += "MultiTainter.taintedInt(0, " + "\"" + lval + "\");\n";
         // assign original definition nwo that we have instrumented
         code += lval + " = " + rval;
         return code;
