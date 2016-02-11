@@ -25,9 +25,14 @@ public class Generate {
         return NAME_PREFIX + NAME_SEPARATOR + i + NAME_SEPARATOR + suffix;
     }
 
-    private void runOne(List<String> code, ProgramState progState, Instrumenter instrumenter, String name) {
+    private void runOne(List<String> code,
+                        ProgramState progState,
+                        Instrumenter instrumenter,
+                        int progCounter,
+                        String instrumentationType) {
+        String name = makeName(progCounter, instrumentationType);
         List<String> instrumented = instrumenter.instrument(progState, code);
-        String assembled = randomProgram.assembleCode(name, instrumented);
+        String assembled = randomProgram.assembleCode(name, instrumented, instrumentationType);
         try {
             File file = new File(outDir + File.separator + name + ".java");
             Writer writer = new BufferedWriter(new FileWriter(file));
@@ -51,9 +56,9 @@ public class Generate {
             // sampled code
             List<String> sampled = randomProgram.sample(programState);
             // none
-            runOne(sampled, programState, none, makeName(i, "none"));
+            runOne(sampled, programState, none, i, "none");
             // naive
-            runOne(sampled, programState, naive, makeName(i, "naive"));
+            runOne(sampled, programState, naive, i, "naive");
         }
     }
 

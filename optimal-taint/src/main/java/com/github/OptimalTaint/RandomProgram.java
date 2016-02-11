@@ -520,15 +520,31 @@ public class RandomProgram {
     }
 
     /**
+     * Add necessary import statements
+     * @param typeOfInstrumentation name of instrumentation [none, naive]
+     * @return necessary import statements for self-contained program
+     */
+    public String importStatements(String typeOfInstrumentation) {
+        if (typeOfInstrumentation != null && typeOfInstrumentation.equals("naive")) {
+            return "import edu.columbia.cs.psl.phosphor.runtime.MultiTainter;\n";
+        } else {
+            return "";
+        }
+    }
+
+
+    /**
      * Wrap a sampled program body into a generic class name, wrap code into a method
      * called run, which returns a long (we want a return value to avoid eliminating code
      * in optimization), and add a main method so can be run standalone
      * @param className class name to use for wrapping
      * @param code sample code
+     * @param typeOfInstrumentation name of instrumentation type (for import statements)[none, naive]
      * @return compilable java code
      */
-    public String assembleCode(String className, List<String> code) {
-        String program = "class " + className + " {\n";
+    public String assembleCode(String className, List<String> code, String typeOfInstrumentation) {
+        String program = importStatements(typeOfInstrumentation);
+        program += "class " + className + " {\n";
         program += defineSafeOps();
 
         // run method wrapper
