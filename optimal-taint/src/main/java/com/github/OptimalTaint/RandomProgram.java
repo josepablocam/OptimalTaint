@@ -550,7 +550,11 @@ public class RandomProgram {
         // run method wrapper
         program += "\tpublic static long run(){\n";
         program += "\t" + initCounter();
-        program += String.join("", code);
+        StringBuilder body = new StringBuilder();
+        for (String fragment : code) {
+            body.append(fragment);
+        }
+        program += body;
         program += "\n\treturn "+ COUNTER + ";\n";
         program += "\t}\n";
 

@@ -1,5 +1,6 @@
 package com.github.OptimalTaint;
 
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -111,7 +112,7 @@ public class ParsedGrammar extends Grammar {
         // parsed
         Path path = Paths.get(fileName);
         try {
-            List<String> lines = Files.readAllLines(path);
+            List<String> lines = Files.readAllLines(path, StandardCharsets.UTF_8);
             Map<Production, Double> rules = new HashMap<Production, Double>();
             for (String line : lines) {
                 if (!line.isEmpty()) {
