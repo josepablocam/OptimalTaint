@@ -560,7 +560,7 @@ public class RandomProgram {
 
         // main method wrapper
         program += "\tpublic static void main(String[] args){\n";
-        program += "\tSystem.out.println(\"COUNTER:\" + " + className + ".run());\n";
+        program += "\tSystem.out.println(" + className + ".run());\n";
         program += "\t}\n}";
         return program;
     }
