@@ -17,6 +17,7 @@ public class RandomProgram {
     static final int MAX_INT = 100;
     // variable names are x_<integer>
     static final String VAR_NAME_STUB = "x_";
+    static final String COUNTER = "COUNTER";
 
     /*
     HELPER UTILITIES
@@ -85,6 +86,24 @@ public class RandomProgram {
         return probs;
     }
 
+
+    /**
+     * Create a counter to keep track of number of branches taken in program
+     * @return
+     */
+    private String initCounter() {
+        return "long " + COUNTER + " = 0;\n";
+    }
+
+    /**
+     * Useful to count number of branches actually taken in program and avoid
+     * complete code elimination by optimizer (otherwise benchmarking can be useless)
+     * @return code
+     */
+    private String increaseCounter() {
+        return "\n"+ COUNTER +"++;\n";
+    }
+
     /*
     CORE-SYNTAX (TIGHT TAINT TRACKING PAPER)
     ENCODED AS A SET OF RECURSIVE FUNCTIONS
@@ -151,6 +170,7 @@ public class RandomProgram {
         }
 
         assignment += ";\n";
+        assignment += increaseCounter();
         // add variable name to scope
         p.pushVariableName(varName);
         // increase variable counter for future definitions
@@ -251,7 +271,6 @@ public class RandomProgram {
                 code.add(aop(p));
                 break;
         }
-
         return code;
     }
 
@@ -428,6 +447,7 @@ public class RandomProgram {
         code.addAll(root(p));
         code.add(conditionAndVar.get(1));
         p.popScope();
+        code.add(increaseCounter());
         code.add("}\n");
         // meaningful command
         p.increaseCountNonSkip();
@@ -500,16 +520,47 @@ public class RandomProgram {
     }
 
     /**
-     * Wrap a sampled program body into a generic class name and main method
+     * Add necessary import statements
+     * @param typeOfInstrumentation name of instrumentation [none, naive]
+     * @return necessary import statements for self-contained program
+     */
+    public String importStatements(String typeOfInstrumentation) {
+        if (typeOfInstrumentation != null && typeOfInstrumentation.equals("naive")) {
+            return "import edu.columbia.cs.psl.phosphor.runtime.MultiTainter;\n";
+        } else {
+            return "";
+        }
+    }
+
+
+    /**
+     * Wrap a sampled program body into a generic class name, wrap code into a method
+     * called run, which returns a long (we want a return value to avoid eliminating code
+     * in optimization), and add a main method so can be run standalone
      * @param className class name to use for wrapping
      * @param code sample code
+     * @param typeOfInstrumentation name of instrumentation type (for import statements)[none, naive]
      * @return compilable java code
      */
-    public String assembleCode(String className, List<String> code) {
-        String program = "class " + className + " {\n";
+    public String assembleCode(String className, List<String> code, String typeOfInstrumentation) {
+        String program = importStatements(typeOfInstrumentation);
+        program += "class " + className + " {\n";
         program += defineSafeOps();
+
+        // run method wrapper
+        program += "\tpublic static long run(){\n";
+        program += "\t" + initCounter();
+        StringBuilder body = new StringBuilder();
+        for (String fragment : code) {
+            body.append(fragment);
+        }
+        program += body;
+        program += "\n\treturn "+ COUNTER + ";\n";
+        program += "\t}\n";
+
+        // main method wrapper
         program += "\tpublic static void main(String[] args){\n";
-        program += String.join("", code);
+        program += "\tSystem.out.println(" + className + ".run());\n";
         program += "\t}\n}";
         return program;
     }

@@ -35,7 +35,7 @@ public class Example {
         List<String> instrumented_code = i.instrument(p, code);
         // wrap code into necessary java boiler plate
         // add in import statements etc for Phosphor
-        String javaCode = r.assembleCode("A", instrumented_code);
+        String javaCode = r.assembleCode("A", instrumented_code, "naive");
         System.out.println(javaCode);
     }
 
