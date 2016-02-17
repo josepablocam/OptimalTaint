@@ -10,11 +10,12 @@ import java.util.regex.Pattern;
  * Currently implemented as an ugly regex match for simplicity purposes
  */
 public class NaiveInstrumenter implements Instrumenter {
-    Pattern varDefineStart = Pattern.compile("int.*");
-    String assignmentOp = "=";
+    static final String VAR_NAME_STUB = "x_";
+    static final Pattern varDefineStart = Pattern.compile("^int\\s+" + VAR_NAME_STUB + ".*");
+    static final String assignmentOp = "=";
 
     public boolean isVarDefinition(String code) {
-        return varDefineStart.matcher(code).find();
+        return varDefineStart.matcher(code.trim()).find();
     }
 
     public String getLVal(String code) {
@@ -23,7 +24,7 @@ public class NaiveInstrumenter implements Instrumenter {
     }
 
     public String getRVal(String code) {
-        return code.split(assignmentOp)[1];
+        return code.split(assignmentOp)[1].replaceAll("[;\n]", "").trim();
     }
 
     public String modify(String codeFragment) {
@@ -31,9 +32,7 @@ public class NaiveInstrumenter implements Instrumenter {
         String rval = getRVal(codeFragment);
         String code = "int " + lval + " = ";
         // instrumnent from start, so we can track dependencies
-        code += "MultiTainter.taintedInt(0, " + "\"" + lval + "\");\n";
-        // assign original definition nwo that we have instrumented
-        code += lval + " = " + rval;
+        code += "MultiTainter.taintedInt(" + rval + ", " + "\"" + lval + "\");\n";
         return code;
     }
 
