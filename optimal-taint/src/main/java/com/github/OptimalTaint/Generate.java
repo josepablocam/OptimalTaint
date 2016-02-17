@@ -19,7 +19,7 @@ public class Generate {
 
     public void info() {
         System.out.println("Generate " + numFiles + " files, with " + numVars +
-                " vars, and at least " + minLen + "commands");
+                " vars, and at least " + minLen + " commands");
         System.out.println("Output directory: " + outDir);
     }
 
