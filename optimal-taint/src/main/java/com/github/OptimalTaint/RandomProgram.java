@@ -17,6 +17,11 @@ public class RandomProgram {
     static final int MAX_INT = 100;
     // variable names are x_<integer>
     static final String VAR_NAME_STUB = "x_";
+    // loop variable names are LOOP_VAR_<integer>
+    static final String LOOP_VAR_NAME_STUB = "LOOP_VAR";
+    // we use this to count loops and assign unique loop variable names
+    int LOOP_COUNTER = 0;
+    // we use a counter to count the number of actual commands executed in a program
     static final String COUNTER = "COUNTER";
 
     /*
@@ -110,6 +115,29 @@ public class RandomProgram {
      */
 
     /**
+     * Create an initial environment by having `numVars` top-level variable declarations.
+     * This means there is really no sense of scope in the programs, which aligns
+     * with the paper's core syntax. Initial values are bounded by a multiple of the number
+     * of variables (otherwise hard to obtain interesting interactions)
+     * @param p Program state encoding stateful information
+     * @param numVars Number of variables to declare
+     * @return
+     */
+    private List<String> initEnvironment(ProgramState p, int numVars) {
+        List<String> code = new ArrayList<String>();
+        code.add("// initial environment (r0)\n");
+        for (int i = 0; i < numVars; i++) {
+            String varName = VAR_NAME_STUB + p.getVariableCounter();
+            String def = "int " + varName + " = " + p.rng.nextInt(numVars * MAX_INT) + ";\n";
+            code.add(def);
+            p.pushVariableName(varName);
+            p.increaseVariableCounter();
+        }
+        return code;
+    }
+
+
+    /**
      * c ::= x:= aexp | if .... | while ... | skip | c; c
      * @param p Program state encoding stateful information
      * @return top-level commands code
@@ -151,31 +179,22 @@ public class RandomProgram {
 
     /**
      * (aasgn) x := aexp
-     * Creates a new (fresh) l-value, translating this
-     * to
-     *    int fresh_var = aexp
-     * in java.
-     * aexp is free to use all variable names in scope, except for the newly created variable
-     * (to avoid circular definitions). The new variable name is pushed into scope after the command
-     * completes
+     * Assigns a value to one of the pre-defined (top-level) variables. The value is a function
+     * of available variables and integers.
      * @param p Program state representing stateful information
      * @return new variable definition code
      */
     private String aasgn(ProgramState p) {
-        String varName = VAR_NAME_STUB + p.getVariableCounter();
-        String assignment = "int " + varName + " = ";
-
-        for (String fragment : aexp(p)) {
+        // Randomly pick variable to assign to
+        String lval = var(p);
+        List<String> rval = aexp(p);
+        String assignment = lval + " = ";
+        for (String fragment : rval) {
             assignment += fragment;
         }
-
         assignment += ";\n";
-        assignment += increaseCounter();
-        // add variable name to scope
-        p.pushVariableName(varName);
-        // increase variable counter for future definitions
-        p.increaseVariableCounter();
         // assignment is non-skip, meaningful, command
+        assignment += increaseCounter();
         p.increaseCountNonSkip();
         return assignment;
     }
@@ -409,36 +428,32 @@ public class RandomProgram {
     }
 
 
-    /*
-    SOME EXPERIMENTAL IDEAS FOR RANDOM CODE GEN
-    (JOSE: CHECK WITH DR TRIPP AND SEE IF HE AGREES WITH THIS APPROACH)
-     */
-
     /**
      * javac complains (error) about unreachable code, which can often happen with randomly
      * generated conditions (not to mention that could also result in non-termination for loops).
-     * This function generates "finite-loops" by using a loop variable (creates one when
-     * none is available). The loop conditions tests if the variable is less than some randomly
+     * This function generates "finite-loops" by using a loop variable (a unique variable is
+     * created for each loop). The loop variable is originally defined in terms of an aexp, so
+     * it can be a function of existing top-level variables.
+     * The loop conditions tests if the variable is less than some randomly
      * generated integer threshold. Code is added to increment the loop variable by 1 in each
-     * iteration.
+     * iteration, guaranteeing termination
      * @param p Program state
-     * @return code neede for a finite loop
+     * @return code needed for a finite loop
      */
     private List<String> finiteLoop(ProgramState p) {
         List<String> code = new ArrayList<String>();
 
         // Create a loop variable
-        String loopVar = var(p);
-        // we check if we got back an random integer literal, meaning no variable exists in scope
-        if (loopVar.charAt(0) != VAR_NAME_STUB.charAt(0)) {
-            // we don't have a variable name, so define it
-            String varInit = aasgn(p);
-            code.add(varInit);
-            // hackish :(
-            loopVar = varInit.split("\\s+")[1];
+        String loopVar = LOOP_VAR_NAME_STUB + "_" + LOOP_COUNTER++;
+        String initLoopVar = "int " + loopVar + " = ";
+        for (String fragment : aexp(p)) {
+            initLoopVar += fragment;
         }
-
+        initLoopVar += ";\n";
+        // generate condition and increment code
         List<String> conditionAndVar = loopControlFlow(p, loopVar);
+
+        code.add(initLoopVar);
         code.add("while (");
         code.add(conditionAndVar.get(0));
         code.add("){\n");
@@ -503,12 +518,15 @@ public class RandomProgram {
      * calls finish and we still don't have the minimum number of non skip commands,
      * it will continue to sample. Thus the programs generated may exceed the desired length.
      * @param p Program state representing stateful information
-     * @return The body of a sampled program (not compilable)
+     * @param numVars Number of variables in environment
+     * @return The body of a sampled program (not compilable until wrapped in class and main)
      */
-    public List<String> sample(ProgramState p) {
+    public List<String> sample(ProgramState p, int numVars) {
         List<String> program = new ArrayList<String>();
         // initialize our scope information
         p.pushScope();
+        // initialize variable declarations
+        program.addAll(initEnvironment(p, numVars));
         // repeatedly sample commands as needed
         while (!p.done()) {
             List<String> codeFragment = root(p);
