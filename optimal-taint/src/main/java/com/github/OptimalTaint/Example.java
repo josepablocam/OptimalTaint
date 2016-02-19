@@ -30,7 +30,7 @@ public class Example {
         // create a new program state with a mininmum of 2 non-skip lines (might result in more)
         // and a seed for reproducibility purposes
         ProgramState p = new ProgramState(2, 10);
-        List<String> code = r.sample(p);
+        List<String> code = r.sample(p, 10);
         // perform instrumentation
         List<String> instrumented_code = i.instrument(p, code);
         // wrap code into necessary java boiler plate

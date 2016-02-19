@@ -12,12 +12,14 @@ public class Generate {
     static final String NAME_SEPARATOR = "_";
     static final String NAME_PREFIX = "P";
     int numFiles;
+    int numVars;
     int minLen;
     String outDir;
     RandomProgram randomProgram;
 
     public void info() {
-        System.out.println("Generate " + numFiles + " files, with at least " + minLen + "commands");
+        System.out.println("Generate " + numFiles + " files, with " + numVars +
+                " vars, and at least " + minLen + " commands");
         System.out.println("Output directory: " + outDir);
     }
 
@@ -54,7 +56,7 @@ public class Generate {
             // use i as seed, note that program state must be fresh each time
             ProgramState programState = new ProgramState(minLen, i);
             // sampled code
-            List<String> sampled = randomProgram.sample(programState);
+            List<String> sampled = randomProgram.sample(programState, numVars);
             // none
             runOne(sampled, programState, none, i, "none");
             // naive
@@ -62,8 +64,9 @@ public class Generate {
         }
     }
 
-    public Generate(int numFiles, int minLen, String outDir, RandomProgram randomProgram) {
+    public Generate(int numFiles, int numVars, int minLen, String outDir, RandomProgram randomProgram) {
         this.numFiles = numFiles;
+        this.numVars = numVars;
         this.minLen = minLen;
         this.outDir = outDir;
         // if outdir doesn't exist, create it
@@ -76,7 +79,7 @@ public class Generate {
     }
 
     private static void help() {
-        System.out.println("usage: <num-files > 0> <min-length > 0> <output-dir> [probs-file]");
+        System.out.println("usage: <num-files > 0> <num-vars > 0> <min-length > 0> <output-dir> [probs-file]");
     }
 
     public static void main(String[] args) {
@@ -85,30 +88,31 @@ public class Generate {
             System.exit(0);
         }
 
-        if (args.length < 3) {
+        if (args.length < 4) {
             help();
             System.exit(1);
         }
 
         int numFiles = Integer.parseInt(args[0]);
-        int minLen = Integer.parseInt(args[1]);
-        String outputDir = args[2];
+        int numVars = Integer.parseInt(args[1]);
+        int minLen = Integer.parseInt(args[2]);
+        String outputDir = args[3];
         Grammar grammar = new UniformGrammar();
 
-        if (numFiles <= 0 || minLen <= 0) {
+        if (numFiles <= 0 || minLen <= 0 || numVars <= 0) {
             help();
             System.exit(1);
         }
 
-        if (args.length == 4) {
-            String grammarFile = args[3];
+        if (args.length == 5) {
+            String grammarFile = args[4];
             grammar = new ParsedGrammar(grammarFile);
         }
 
         // Random program
         RandomProgram randomProgram = new RandomProgram(grammar);
         // Generator
-        Generate generate = new Generate(numFiles, minLen, outputDir, randomProgram);
+        Generate generate = new Generate(numFiles, numVars, minLen, outputDir, randomProgram);
         // generate programs as requested
         generate.run();
     }

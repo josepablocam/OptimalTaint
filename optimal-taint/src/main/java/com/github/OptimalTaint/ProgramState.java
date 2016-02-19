@@ -89,7 +89,6 @@ public class ProgramState {
     public void pushVariableName(String name) {
         List<String> currentScope = symbolTable.peek();
         currentScope.add(name);
-        variableCounter++;
     }
 
     /**

@@ -27,6 +27,21 @@
     	<version>2.2.3</version>
     </dependency>
 
+    <!--
+    <dependency>
+    	<groupId>com.google.code.java-allocation-instrumenter</groupId>
+    	<artifactId>java-allocation-instrumenter</artifactId>
+    	<version>2.0</version>
+    </dependency>
+
+    <dependency>
+    		<groupId>com.google.caliber</groupId>
+    		<artifactId>allocation</artifactId>
+    		<version>1.0</version>
+
+    </dependency>
+    -->
+
   </dependencies>
 
 <build>
