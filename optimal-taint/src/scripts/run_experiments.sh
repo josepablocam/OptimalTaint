@@ -1,33 +1,39 @@
 #!/usr/bin/env bash
 
+# TODO: make this self-contained (i.e. project should download phosphor and build etc)
 # Parse in arguments
-if [ $# -ne 4 ]
+if [ $# -ne 6 ]
  then
-    echo "Usage: ./run_experiments.sh <num-files> <num-vars> <min-lens> <results-dir>"
+    #echo "Usage: ./run_experiments.sh <phosphor-target> <num-files> <num-vars> <min-lens> <generated-dir> <results-dir>"
+    echo "Usage: ./run_experiments.sh <num-files> <num-vars> <min-lens> <generated-dir> <results-dir>"
+    echo "phosphor-target: phosphor target folder, as created by calling mvn package; mvn verify; in the phosphor project"
     echo "num-files: number of files to generate for each iteration of test"
     echo "num-vars: quoted, space-separated list of number of variables for experiments"
     echo "min-lens: quoted, space-separated list of minimum number of commands for experiments"
+    echo "generated-dir: directory used to create random programs"
     echo "results-dir: output directory for results"
     exit 1
 fi
 
-# Arguments
-num_files=$1
-num_vars=$2
-min_lens=$3
-out_dir=$4
+# User arguments
+#phosphor_target=$(realpath $1)
+phosphor_target=$1
+num_files=$2
+num_vars=$3
+min_lens=$4
+gen_dir=$5
+results_dir=$6
 
 SCRIPTS_DIR=$(dirname $(realpath $0))
 
 # Resources needed
-phosphor_target=$(realpath ~/MS/research/trippproject/phosphor/Phosphor/target/)
 phosphor_jar=$(find $phosphor_target -iname "Phosphor-[0-9]*SNAPSHOT.jar" | xargs -I {} realpath {})
 instrumented_jre=$(realpath ${phosphor_target}/jre-inst-obj/)
 caliper_jar=$(realpath ~/.m2/repository/com/google/caliper/caliper/0.5-rc1/caliper-0.5-rc1.jar)
-optimal_taint_jar=$(realpath ~/MS/research/trippproject/OptimalTaint/optimal-taint/target/optimal-taint-1.0-SNAPSHOT.jar)
+optimal_taint_jar=$(realpath $SCRIPTS_DIR/../../target/optimal-taint-1.0-SNAPSHOT.jar)
 
 # Create results folder
-mkdir -p results/
+mkdir -p $results_dir
 # File holding counts data
 counts_results_file=$(realpath results/counts.csv)
 caliper_results_file_stub=$(realpath results/caliper_results)
@@ -59,24 +65,24 @@ function run {
 
 function mk_clean_dirs {
  # clean up existing folders
- rm -rf generated/ orig_compiled/ inst_compiled/
+ rm -rf $gen_dir/
  # Create necessary folders for compilation/instrumentation
- mkdir -p generated/ orig_compiled/ inst_compiled/
+ mkdir -p $gen_dir/orig_compiled/ $gen_dir/inst_compiled/
 }
 
 # Generate files using java and compile/instrument as necessary
 # Args: number of variables, minimum number of commands
 function generate_files_and_compile {
-  java -cp $optimal_taint_jar com.github.OptimalTaint.Generate $num_files $1 $2 $out_dir
+  java -cp $optimal_taint_jar com.github.OptimalTaint.Generate $num_files $1 $2 $gen_dir
 
   # Generate google caliper benchmark files
-  java -cp $optimal_taint_jar com.github.OptimalTaint.CreateCaliperBenchmarks $out_dir "Caliper"
+  java -cp $optimal_taint_jar com.github.OptimalTaint.CreateCaliperBenchmarks $gen_dir "Caliper"
 
   # Compile all files (random and benchmarks)
-  javac -cp $caliper_jar:$phosphor_jar -d orig_compiled/ $out_dir/*.java
+  javac -cp $caliper_jar:$phosphor_jar -d $gen_dir/orig_compiled/ $gen_dir/*.java
 
   # Instrument a copy of all files (random and benchmarks)
-  java -jar $phosphor_jar -multiTaint orig_compiled/ inst_compiled/
+  java -jar $phosphor_jar -multiTaint $gen_dir/orig_compiled/ $gen_dir/inst_compiled/
 }
 
 
@@ -91,16 +97,16 @@ local caliper_file_stub=$4
 # file header
 echo "name,declaration_count,generated_command_min_count,instruction_count,branches_exec_count" > $ct_file
 ## For each randomly generated program (except benchmark files) count important stats
-for java_file in $(find $out_dir -type f -name "P*.java" -exec basename {} ';')
+for java_file in $(find $gen_dir -type f -name "P*.java" -exec basename {} ';')
 do
   # trim file ending
   name=${java_file%.*}
   # choose directory to use based on file name
   if [[ $name == *_none ]]
     then
-      dir=orig_compiled/
+      dir=$gen_dir/orig_compiled/
     else
-      dir=inst_compiled/
+      dir=$gen_dir/inst_compiled/
   fi
   # add name of source file
   echo -n $name >> $ct_file
@@ -122,9 +128,9 @@ done
 ## Caliper benchmark files
 # Execution and memory (TODO: memory) benchmarking
 # No instrumentation
-(cd orig_compiled; $SCRIPTS_DIR/run_caliper.sh $phosphor_target Caliper_none --results ${caliper_file_stub}_none.json)
+(cd $gen_dir/orig_compiled; $SCRIPTS_DIR/run_caliper.sh $phosphor_target Caliper_none --results ${caliper_file_stub}_none.json)
 ## Naive instrumentation
-(cd inst_compiled; $SCRIPTS_DIR/run_caliper.sh $phosphor_target Caliper_naive --instrumented --results ${caliper_file_stub}_naive.json)
+(cd $gen_dir/inst_compiled; $SCRIPTS_DIR/run_caliper.sh $phosphor_target Caliper_naive --instrumented --results ${caliper_file_stub}_naive.json)
 }
 
 
