@@ -5,7 +5,7 @@
 if [ $# -ne 6 ]
  then
     #echo "Usage: ./run_experiments.sh <phosphor-target> <num-files> <num-vars> <min-lens> <generated-dir> <results-dir>"
-    echo "Usage: ./run_experiments.sh <num-files> <num-vars> <min-lens> <generated-dir> <results-dir>"
+    echo "Usage: ./run_experiments.sh <phosphor-target> <num-files> <num-vars> <min-lens> <generated-dir> <results-dir>"
     echo "phosphor-target: phosphor target folder, as created by calling mvn package; mvn verify; in the phosphor project"
     echo "num-files: number of files to generate for each iteration of test"
     echo "num-vars: quoted, space-separated list of number of variables for experiments"
@@ -16,8 +16,7 @@ if [ $# -ne 6 ]
 fi
 
 # User arguments
-#phosphor_target=$(realpath $1)
-phosphor_target=$1
+phosphor_target=$(realpath $1)
 num_files=$2
 num_vars=$3
 min_lens=$4
