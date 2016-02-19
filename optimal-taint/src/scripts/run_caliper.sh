@@ -33,8 +33,9 @@ export CLASSPATH=~/.m2/repository/com/google/caliper/caliper/0.5-rc1/caliper-0.5
 $phosphor_jar:\
 $(pwd)
 
+
 # consumer optional args if we got any
-if [ $# > 2 ]
+if [ $# -gt 2 ]
   then
     shift; shift; # consume first 2 args
     while [[ $# -ge 1 ]]
@@ -64,6 +65,7 @@ fi
  # set up necessary flags if instrumenting
 if [ ! -z $instrumented ]
   then
+  echo "Instrumented run"
   export JAVA_HOME=$instrumented_jre
   export JAVA_TOOL_OPTIONS="-Xbootclasspath/a:$phosphor_jar -javaagent:$phosphor_jar"
 fi
