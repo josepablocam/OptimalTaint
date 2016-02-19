@@ -20,6 +20,7 @@ fi
 
 # Necessary Phosphor stuff
 phosphor_jar=$(find $1 -iname "Phosphor-[0-9]*SNAPSHOT.jar" | xargs -I {} realpath {})
+#memory_alloc_jar=/Users/josecambronero/.m2/repository/com/google/code/java-allocation-instrumenter/java-allocation-instrumenter/2.0/java-allocation-instrumenter-2.0.jar
 instrumented_jre=$(realpath ${1}/jre-inst-obj/)
 # class to run
 name=$2
@@ -30,11 +31,13 @@ name=$2
 export CLASSPATH=~/.m2/repository/com/google/caliper/caliper/0.5-rc1/caliper-0.5-rc1.jar:\
 ~/.m2/repository/com/google/guava/guava/14.0.1/guava-14.0.1.jar:\
 ~/.m2/repository/com/google/code/gson/gson/2.2.3/gson-2.2.3.jar:\
+#$memory_alloc_jar:\
 $phosphor_jar:\
 $(pwd)
 
+
 # consumer optional args if we got any
-if [ $# > 2 ]
+if [ $# -gt 2 ]
   then
     shift; shift; # consume first 2 args
     while [[ $# -ge 1 ]]
@@ -64,6 +67,7 @@ fi
  # set up necessary flags if instrumenting
 if [ ! -z $instrumented ]
   then
+  echo "Instrumented run"
   export JAVA_HOME=$instrumented_jre
   export JAVA_TOOL_OPTIONS="-Xbootclasspath/a:$phosphor_jar -javaagent:$phosphor_jar"
 fi
@@ -76,6 +80,9 @@ if [ ! -z $compile ]
 fi
 
 echo "Bencharking $name"
+# memory allocation jar needed
+# export ALLOCATION_JAR=$memory_alloc_jar
+
 if [ -z $results_file ]
   then
     java com.google.caliper.Runner $name
