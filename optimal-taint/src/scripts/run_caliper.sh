@@ -19,9 +19,9 @@ if [ $# -lt 2 ]
 fi
 
 # Necessary Phosphor stuff
-phosphor_jar=$(find $1 -iname "Phosphor-[0-9]*SNAPSHOT.jar" | xargs -I {} realpath {})
+phosphor_jar=$(find $1 -iname "Phosphor-[0-9]*SNAPSHOT.jar" | xargs -I {} readlink -f {})
 #memory_alloc_jar=/Users/josecambronero/.m2/repository/com/google/code/java-allocation-instrumenter/java-allocation-instrumenter/2.0/java-allocation-instrumenter-2.0.jar
-instrumented_jre=$(realpath ${1}/jre-inst-obj/)
+instrumented_jre=$(readlink -f ${1}/jre-inst-obj/)
 # class to run
 name=$2
 

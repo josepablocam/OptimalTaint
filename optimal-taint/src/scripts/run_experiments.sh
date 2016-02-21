@@ -16,27 +16,27 @@ if [ $# -ne 6 ]
 fi
 
 # User arguments
-phosphor_target=$(realpath $1)
+phosphor_target=$(readlink -f $1)
 num_files=$2
 num_vars=$3
 min_lens=$4
 gen_dir=$5
 results_dir=$6
 
-SCRIPTS_DIR=$(dirname $(realpath $0))
+SCRIPTS_DIR=$(dirname $(readlink -f $0))
 
 # Resources needed
-phosphor_jar=$(find $phosphor_target -iname "Phosphor-[0-9]*SNAPSHOT.jar" | xargs -I {} realpath {})
-instrumented_jre=$(realpath ${phosphor_target}/jre-inst-obj/)
-caliper_jar=$(realpath ~/.m2/repository/com/google/caliper/caliper/0.5-rc1/caliper-0.5-rc1.jar)
-optimal_taint_jar=$(realpath $SCRIPTS_DIR/../../target/optimal-taint-1.0-SNAPSHOT.jar)
+phosphor_jar=$(find $phosphor_target -iname "Phosphor-[0-9]*SNAPSHOT.jar" | xargs -I {} readlink -f {})
+instrumented_jre=$(readlink -f ${phosphor_target}/jre-inst-obj/)
+caliper_jar=$(readlink -f ~/.m2/repository/com/google/caliper/caliper/0.5-rc1/caliper-0.5-rc1.jar)
+optimal_taint_jar=$(readlink -f $SCRIPTS_DIR/../../target/optimal-taint-1.0-SNAPSHOT.jar)
 
 # Create results folder
 mkdir -p $results_dir
 # File holding counts data
-counts_results_file=$(realpath results/counts.csv)
-caliper_results_file_stub=$(realpath results/caliper_results)
-results_file=$(realpath results/results.csv)
+counts_results_file=$(readlink -f results/counts.csv)
+caliper_results_file_stub=$(readlink -f results/caliper_results)
+results_file=$(readlink -f results/results.csv)
 
 
 # Count nuber of lines and trim unnecessary text
