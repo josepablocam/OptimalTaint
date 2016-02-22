@@ -28,6 +28,7 @@ def _get_caliper_time(bench):
     """
     return [iter['processed'] for iter in  bench['v']['measurementSetMap']['TIME']['measurements']]
 
+
 def parse_json(filepath):
     """
     Create a dataframe from caliper json files
@@ -96,6 +97,9 @@ def main(counts_path, caliper_path_stub, output_path):
     naive_tracking = parse_json(caliper_path_stub + "_naive.json")
     caliper_data = pd.concat([no_tracking, naive_tracking], axis = 0).reset_index()
     complete_data = merge(counts_data, caliper_data)
+    del complete_data['level_0']
+    del complete_data['index']
+
     writeout(output_path, complete_data)
 
 def help_message():
