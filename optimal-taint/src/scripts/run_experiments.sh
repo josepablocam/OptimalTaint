@@ -22,6 +22,9 @@ num_vars=$3
 min_lens=$4
 gen_dir=$5
 results_dir=$6
+# minimum number of executed commands in a randomly generated program
+# needed to avoid programs that do next to nothing (and result in caliper exceptions)
+MIN_CMD=500
 
 SCRIPTS_DIR=$(dirname $(readlink -f $0))
 
@@ -72,7 +75,7 @@ function mk_clean_dirs {
 # Generate files using java and compile/instrument as necessary
 # Args: number of variables, minimum number of commands
 function generate_files_and_compile {
-  java -cp $optimal_taint_jar com.github.OptimalTaint.Generate $num_files $1 $2 $gen_dir
+  java -cp $optimal_taint_jar com.github.OptimalTaint.Generate $num_files $1 $2 $MIN_CMD $gen_dir
 
   # Generate google caliper benchmark files
   java -cp $optimal_taint_jar com.github.OptimalTaint.CreateCaliperBenchmarks $gen_dir "Caliper"

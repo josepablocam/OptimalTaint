@@ -1,11 +1,7 @@
 package com.github.OptimalTaint;
 
+import java.io.*;
 import java.util.List;
-
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.Writer;
 
 
 public class Generate {
@@ -14,12 +10,14 @@ public class Generate {
     int numFiles;
     int numVars;
     int minLen;
+    int minExecutions;
     String outDir;
     RandomProgram randomProgram;
 
     public void info() {
         System.out.println("Generate " + numFiles + " files, with " + numVars +
-                " vars, and at least " + minLen + " commands");
+                " vars, at least " + minLen + " commands, at least " + minExecutions +
+                " commands executed");
         System.out.println("Output directory: " + outDir);
     }
 
@@ -45,29 +43,63 @@ public class Generate {
         }
     }
 
+    public boolean verifyRunProgram(int i, String nameEnding) {
+        String name = makeName(i, nameEnding);
+        String fileName = outDir + File.separator + name + ".java";
+        int ctInstructionExecutions = 0;
+        try {
+            // compile and run our sample program and use stdout print
+            // to gauge if it has enough computation
+            ProcessBuilder compile = new ProcessBuilder("javac", fileName);
+            compile.start().waitFor();
+            ProcessBuilder runner = new ProcessBuilder("java", "-cp", outDir, name);
+            Process running = runner.start();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(running.getInputStream()));
+            ctInstructionExecutions = Integer.parseInt(reader.readLine());
+        } catch (Exception e) {
+            System.out.println("Failed to build");
+            System.out.println(e.getMessage());
+        }
+        return ctInstructionExecutions >= minExecutions;
+    }
+
     public void run() {
         info();
         // unnecessary, but done for completeness
         Instrumenter none = new NoInstrumenter();
         Instrumenter naive = new NaiveInstrumenter();
 
+        // keep track of a seed offset to avoid repeating files that
+        // didn't result in enough instructions being executed
+        int seed_offset = 0;
+
         for(int i = 0; i < numFiles; i++) {
-            System.out.println("Generating: " + i);
+            int seed = i + seed_offset;
+            System.out.println("Generating: " + i + " w/ seed:" + seed);
             // use i as seed, note that program state must be fresh each time
-            ProgramState programState = new ProgramState(minLen, i);
+            ProgramState programState = new ProgramState(minLen, seed);
             // sampled code
             List<String> sampled = randomProgram.sample(programState, numVars);
             // none
             runOne(sampled, programState, none, i, "none");
+            boolean enoughComputation = verifyRunProgram(i, "none");
             // naive
-            runOne(sampled, programState, naive, i, "naive");
+            if (enoughComputation) {
+                runOne(sampled, programState, naive, i, "naive");
+            } else {
+                // adjust seed to avoid repeating, decrease i to overwrite
+                // the file that didn't meet expectations
+                seed_offset++;
+                i--;
+            }
         }
     }
 
-    public Generate(int numFiles, int numVars, int minLen, String outDir, RandomProgram randomProgram) {
+    public Generate(int numFiles, int numVars, int minLen, int minExecutions, String outDir, RandomProgram randomProgram) {
         this.numFiles = numFiles;
         this.numVars = numVars;
         this.minLen = minLen;
+        this.minExecutions = minExecutions;
         this.outDir = outDir;
         // if outdir doesn't exist, create it
         File f = new File(outDir);
@@ -79,7 +111,7 @@ public class Generate {
     }
 
     private static void help() {
-        System.out.println("usage: <num-files > 0> <num-vars > 0> <min-length > 0> <output-dir> [probs-file]");
+        System.out.println("usage: <num-files > 0> <num-vars > 0> <min-length > 0> <min-executions > 0> <output-dir> [probs-file]");
     }
 
     public static void main(String[] args) {
@@ -88,7 +120,7 @@ public class Generate {
             System.exit(0);
         }
 
-        if (args.length < 4) {
+        if (args.length < 5) {
             help();
             System.exit(1);
         }
@@ -96,7 +128,8 @@ public class Generate {
         int numFiles = Integer.parseInt(args[0]);
         int numVars = Integer.parseInt(args[1]);
         int minLen = Integer.parseInt(args[2]);
-        String outputDir = args[3];
+        int minExecutions = Integer.parseInt(args[3]);
+        String outputDir = args[4];
         Grammar grammar = new UniformGrammar();
 
         if (numFiles <= 0 || minLen <= 0 || numVars <= 0) {
@@ -104,15 +137,15 @@ public class Generate {
             System.exit(1);
         }
 
-        if (args.length == 5) {
-            String grammarFile = args[4];
+        if (args.length == 6) {
+            String grammarFile = args[5];
             grammar = new ParsedGrammar(grammarFile);
         }
 
         // Random program
         RandomProgram randomProgram = new RandomProgram(grammar);
         // Generator
-        Generate generate = new Generate(numFiles, numVars, minLen, outputDir, randomProgram);
+        Generate generate = new Generate(numFiles, numVars, minLen, minExecutions, outputDir, randomProgram);
         // generate programs as requested
         generate.run();
     }
