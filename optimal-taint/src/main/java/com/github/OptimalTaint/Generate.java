@@ -7,6 +7,11 @@ import java.util.List;
 public class Generate {
     static final String NAME_SEPARATOR = "_";
     static final String NAME_PREFIX = "P";
+    // time outs to get rid of long running random programs
+    static final long COMPILE_TIMEOUT = 10L;
+    static final long EXEC_TIMEOUT = 2L;
+    // GNU core utils timeout's code for process that timed out
+    static final int TIMEOUT_CODE = 124;
     int numFiles;
     int numVars;
     int minLen;
@@ -15,9 +20,13 @@ public class Generate {
     RandomProgram randomProgram;
 
     public void info() {
-        System.out.println("Generate " + numFiles + " files, with " + numVars +
-                " vars, at least " + minLen + " commands, at least " + minExecutions +
-                " commands executed");
+        System.out.println("Generate random programs");
+        System.out.println("Num Files: " + numFiles);
+        System.out.println("Num Vars: " + numVars);
+        System.out.println("Min Cmds: " + minLen);
+        System.out.println("Min Execs: " + minExecutions);
+        System.out.println("Compile timeout(s): " + COMPILE_TIMEOUT);
+        System.out.println("Exec timeout(s): " + EXEC_TIMEOUT);
         System.out.println("Output directory: " + outDir);
     }
 
@@ -50,12 +59,32 @@ public class Generate {
         try {
             // compile and run our sample program and use stdout print
             // to gauge if it has enough computation
-            ProcessBuilder compile = new ProcessBuilder("javac", fileName);
-            compile.start().waitFor();
-            ProcessBuilder runner = new ProcessBuilder("java", "-cp", outDir, name);
+            // using GNU timeout to avoid long running random programs
+            // we don't use waitFor (which has timeout option in java 1.8),
+            // as java 1.8 conflicts with other parts of our experimental pipeline
+            ProcessBuilder compile = new ProcessBuilder("timeout", COMPILE_TIMEOUT + "s", "javac", fileName);
+            Process compiling = compile.start();
+            compiling.waitFor();
+            if (compiling.exitValue() == TIMEOUT_CODE) {
+                System.out.println("Compilation timed out");
+            }
+
+            ProcessBuilder runner = new ProcessBuilder("timeout", EXEC_TIMEOUT + "s", "java", "-cp", outDir, name);
             Process running = runner.start();
+            running.waitFor();
+            if (running.exitValue() == TIMEOUT_CODE) {
+                System.out.println("Execution timed out");
+            }
+
+            // just use the last line to validate execution count
             BufferedReader reader = new BufferedReader(new InputStreamReader(running.getInputStream()));
-            ctInstructionExecutions = Integer.parseInt(reader.readLine());
+            String lastLine = "";
+            String currLine = "";
+
+            while ((currLine = reader.readLine()) != null) {
+                lastLine = currLine;
+            }
+            ctInstructionExecutions = Integer.parseInt(lastLine);
         } catch (Exception e) {
             System.out.println("Failed to build");
             System.out.println(e.getMessage());
@@ -89,6 +118,7 @@ public class Generate {
             } else {
                 // adjust seed to avoid repeating, decrease i to overwrite
                 // the file that didn't meet expectations
+                System.out.println("Not enough computation, regenerating");
                 seed_offset++;
                 i--;
             }
