@@ -10,7 +10,7 @@ filter_results <- function(dat) {
   TAKE_N <- 5
   # take last 5  observations
   # TODO: this should be done empirically (once execution time stablizes)
-  ddply(dat, .(name), function(x) tail(x, TAKE_N))
+  ddply(dat, .(name, declaration_count, generated_command_min_count), function(x) tail(x, TAKE_N))
 }
 
 # add some useful columns (duplicates information, but easier for downstream)
