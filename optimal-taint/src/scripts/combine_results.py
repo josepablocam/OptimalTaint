@@ -75,7 +75,7 @@ def writeout(path, data):
     """
     if os.path.exists(path):
         fhandle = open(path, 'a')
-        data.to_csv(fhandle, index = False, header = True)
+        data.to_csv(fhandle, index = False, header = False)
     else:
         fhandle = open(path, 'w')
         data.to_csv(fhandle, index = False, header = True)
