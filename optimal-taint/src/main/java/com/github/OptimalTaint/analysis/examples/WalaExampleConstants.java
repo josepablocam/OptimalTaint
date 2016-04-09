@@ -5,6 +5,6 @@ package com.github.OptimalTaint.analysis.examples;
  */
 public final class WalaExampleConstants {
     static final String DOT_EXE = "/usr/local/bin/dot";
-    static final String GV_EXE = "open";
+    static final String GV_EXE = "gv";
     private WalaExampleConstants(){}
 }
