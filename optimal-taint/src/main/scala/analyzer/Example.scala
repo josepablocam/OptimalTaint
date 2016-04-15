@@ -2,6 +2,10 @@ package analyzer
 
 import java.io.File
 
+/**
+ * Simple example showing how to use analyzer objects to partition traces for
+ * a java program fitting core-synrax
+ */
 object Example {
   def main (args: Array[String]) {
     val fileName = args(0)
@@ -22,6 +26,5 @@ object Example {
     println("-----------------")
     println("Not tainted traces")
     notTainted.foreach(println)
-
   }
 }
