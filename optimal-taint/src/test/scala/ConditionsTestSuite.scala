@@ -1,6 +1,6 @@
 import org.scalatest._
 
-import analyzer.{Conditions, parse, Util, AST, If}
+import analyzer.{Conditions, parse, Util, AST, If, Seq}
 
 
 class ConditionsTestSuite extends FunSuite with BeforeAndAfterEach {
@@ -18,17 +18,54 @@ class ConditionsTestSuite extends FunSuite with BeforeAndAfterEach {
   test("unwinding simple while") {
     val loop = parse.parseAll(parse.com, "while (x < 2) { y = 10; }").get
     val ifStr = "if (x < 2) { y = 10; } else {}"
-    val ifVer = parse.parseAll(parse.com, ifStr + ifStr).get
+    val ifStmt = parse.parseAll(parse.com, ifStr).get
+    val ifVer= Seq(ifStmt :: ifStmt :: Nil)
     val unwoundLoop = Conditions.unwindLoops(loop)
+
     assert(Util.equalsModulo(ifVer, unwoundLoop, ignoreBexpAndIter), "should be equivalent modulo opaque branching id")
+
+    // check that positions carried over (not checked by equality)
+    (ifVer, unwoundLoop) match {
+      case (Seq(ls1), Seq(ls2)) =>
+        assert(ls1.zip(ls2).forall { case (x, y) =>
+          (x.pos.line, x.pos.column) === (y.pos.line, y.pos.column)
+        }, "positions should carry over")
+      case _ => assert(false, "bad unwinding structure")
+    }
   }
 
   test("unwinding nested while") {
-    val loop = parse.parseAll(parse.com, "while (x < 2) { while (x < 1) { y = 10; } }").get
-    val ifStr = "if (x < 2) { if (x < 1) {y = 10;} else {}} else {}"
-    val ifVer = parse.parseAll(parse.com, ifStr + ifStr).get
+    // maintain odd formating of string below, so that we can easily check position for this
+    // contrived test case
+    val loopStr = """
+    while (x < 2) {
+    while (x < 1) {
+    y = 10;
+    }
+    }
+    """
+    val ifStr = """
+    if (x < 2) {
+    if (x < 1) {
+    y = 10;
+    } else {}
+    } else {}
+    """
+
+    val loop = parse.parseAll(parse.com, loopStr).get
+    val ifStmt = parse.parseAll(parse.com, ifStr).get
+    val ifVer = Seq(ifStmt :: ifStmt :: Nil)
     val unwoundLoop = Conditions.unwindLoops(loop)
     assert(Util.equalsModulo(ifVer, unwoundLoop, ignoreBexpAndIter), "should be equivalent modulo opaque branching id")
+
+    // check that positions carried over (not checked by equality)
+    (ifVer, unwoundLoop) match {
+      case (Seq(ls1), Seq(ls2)) =>
+        assert(ls1.zip(ls2).forall { case (x, y) =>
+          (x.pos.line, x.pos.column) === (y.pos.line, y.pos.column)
+        }, "positions should carry over")
+      case _ => assert(false, "bad unwinding structure")
+    }
 
   }
 

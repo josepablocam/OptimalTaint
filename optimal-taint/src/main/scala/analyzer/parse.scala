@@ -67,19 +67,22 @@ object parse extends JavaTokenParsers {
 
   // for java purposes
   def callCom: Parser[Com] =
-    call ~> ";" ^^ { x => Skip }
+    positioned(call ~> ";" ^^ { x => Skip })
 
   def assignCom: Parser[Com] =
-    ident ~ ("=" ~> aexp <~ ";") ^^ { case id ~ exp => Assign(id, exp) }
+    positioned(ident ~ ("=" ~> aexp <~ ";") ^^ { case id ~ exp => Assign(id, exp) })
 
   def whileCom: Parser[Com] =
-    ("while" ~> "(" ~> ident ~> "<" ~> wholeNumber <~ ")") ~ basicCom ^^ { case n ~ c1 => While(n.toInt, BExp(Util.uniqueId()), c1) }
+    positioned(
+      ("while" ~> "(" ~> ident ~> "<" ~> wholeNumber <~ ")") ~ basicCom ^^
+      { case n ~ c1 => While(n.toInt, BExp(Util.uniqueId()), c1) }
+    )
 
   def ifCom: Parser[If] =
-    "if" ~> ifCond ~> basicCom ~ ("else" ~> basicCom) ^^ {
+    positioned("if" ~> ifCond ~> basicCom ~ ("else" ~> basicCom) ^^ {
       case c1 ~ c2 =>
         If(BExp(Util.uniqueId()), c1, c2, None)
-    }
+    })
 
   def ifCond: Parser[String] =
     ignoreBetweenParens ^^ { x => x }
@@ -88,33 +91,36 @@ object parse extends JavaTokenParsers {
     """\((.*?)\)""".r
 
   def initCom: Parser[Com] =
-    (semType ~> ident <~ "=") ~ aexp <~ ";" ^^ { case id ~ exp => Init(id, exp) }
+    positioned((semType ~> ident <~ "=") ~ aexp <~ ";" ^^ { case id ~ exp => Init(id, exp) })
 
   def incrCom: Parser[Com] =
-    ident <~ "++" <~ ";" ^^ { id => Incr(id) }
+    positioned(ident <~ "++" <~ ";" ^^ { id => Incr(id) })
 
   def retCom: Parser[Com] =
-    "return" ~> aexp ~> ";" ^^ { x => Return }
+    positioned("return" ~> aexp ~> ";" ^^ { x => Return })
 
   //parse aexp
   def aexp: Parser[AExp] =
-    call ~ aop ~ aexp ^^ { case v1 ~ _ ~ v2 => AOp(v1, v2) } |
-      call
+    positioned(call ~ aop ~ aexp ^^ { case v1 ~ _ ~ v2 => AOp(v1, v2) }) |
+    call
 
   def aop: Parser[String] =
     """[-%*/+%]""".r ^^ { case v => v.toString }
 
   def call: Parser[AExp] =
-    ident ~> rep("." ~> ident) ~> "(" ~> aexp ~ rep("," ~> aexp) <~ ")" ^^ { case x ~ xs => Call(x :: xs) } |
-      ident ~> rep("." ~> ident) ~> "(" ~> ")" ^^ { x => Call(Nil) } |
-      litOrVar
+    positioned(
+      ident ~> rep("." ~> ident) ~> "(" ~> aexp ~ rep("," ~> aexp) <~ ")" ^^
+      { case x ~ xs => Call(x :: xs) }
+    ) |
+    positioned(ident ~> rep("." ~> ident) ~> "(" ~> ")" ^^ { x => Call(Nil) }) |
+    litOrVar
 
   // parse variables and integers
   def litOrVar: Parser[AExp] =
-    wholeNumber ^^ { n => AConst(n.toInt) } |
-      ident ^^ { n => IVar(n) } |
-      stringLiteral ^^ { s => SConst(s.substring(1, s.length - 1)) } |
-      "(" ~> aexp <~ ")" ^^ { x => x }
+    positioned(wholeNumber ^^ { n => AConst(n.toInt) }) |
+    positioned(ident ^^ { n => IVar(n) }) |
+    positioned(stringLiteral ^^ { s => SConst(s.substring(1, s.length - 1)) }) |
+    positioned("(" ~> aexp <~ ")" ^^ { x => x })
 
   // Utilities
   def fromString(s: String, methodName: String = DEFAULT_METHOD_NAME) = {
