@@ -12,11 +12,15 @@ object Conditions {
    * @return
    */
   private def unwindLoops0(coms: List[Com]): List[Com] = coms match {
-    case While(limit, b, c1) :: xs => {
+    case (loop @ While(limit, b, c1)) :: xs => {
       // unwind body once
       val unwindBody = unwindLoops(c1)
       // replace any conditions fresh each time though
-      (0 until limit).toList.map(x => If(BExp(Util.uniqueId()), freshConditions(unwindBody), Skip)) ++ unwindLoops0(xs)
+      (0 until limit).toList.map { x =>
+        // make sure we copy over the position from the original while loop
+        // so we can find position in source code
+        If(BExp(Util.uniqueId()), freshConditions(unwindBody), Skip, Some(x)).setPos(loop.pos)
+      } ++ unwindLoops0(xs)
   }
     case v :: xs => v :: unwindLoops0(xs)
     case Nil => Nil
@@ -28,7 +32,7 @@ object Conditions {
    * @return
    */
   private def freshConditions(com: Com): Com = com match {
-    case If(_, c1, c2) => If(BExp(Util.uniqueId()), freshConditions(c1), freshConditions(c2))
+    case If(_, c1, c2, iter) => If(BExp(Util.uniqueId()), freshConditions(c1), freshConditions(c2), iter).setPos(com.pos)
     case Seq(cs) => Seq(cs.map(freshConditions))
     case While(_, _, _) => throw new UnsupportedOperationException("loops must be unwound prior")
     case _ => com
@@ -41,7 +45,7 @@ object Conditions {
    */
   def unwindLoops(com: Com): Com = com match {
     case v @ Assign(_, _) => v
-    case If(b, c1, c2) => If(b, unwindLoops(c1), unwindLoops(c2))
+    case If(b, c1, c2, iter) => If(b, unwindLoops(c1), unwindLoops(c2), iter).setPos(com.pos)
     case v @ Incr(_) => v
     case v @ Return => v
     case v @ While(_, _, _) => Util.simplify(Seq(unwindLoops0(v :: Nil)))
@@ -59,7 +63,7 @@ object Conditions {
    */
   private def collectTraces0(com: Com, ts: Set[Trace]): Set[Trace] = com match {
     case v @ Assign(_, _) => ts.map(t => Trace.updateTaint(t, v))
-    case If(BExp(b), c1, c2) => {
+    case If(BExp(b), c1, c2, _) => {
       val takeTrue = ts.map { case Trace(conds, env) => Trace(b :: conds, env)}
       val takeFalse = ts.map { case Trace(conds, env) => Trace(-b :: conds, env)}
       collectTraces0(c1, takeTrue) ++ collectTraces0(c2, takeFalse)

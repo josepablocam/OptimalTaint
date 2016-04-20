@@ -6,7 +6,7 @@ import scala.util.parsing.input.Positional
  * Created by josecambronero on 4/13/16.
  */
 sealed abstract class AST extends Positional {
-  // TODO: override string
+  def pretty(): String = print.pretty(this)
 }
 
 // Aexp
@@ -25,8 +25,9 @@ case class BExp(n: Int) extends AST
 // commands
 sealed abstract class Com extends AST
 case class Assign(v: String, value: AExp) extends Com
-case class If(b: BExp, c1: Com, c2: Com) extends Com
-case class While(limit: Int, b: AST, c1: Com) extends Com
+// iter is used to count iterations in unwound while-loop (which unwinds into if-statements)
+case class If(b: BExp, c1: Com, c2: Com, iter: Option[Int]) extends Com
+case class While(limit: Int, b: BExp, c1: Com) extends Com
 case class Seq(cs: List[Com]) extends Com
 case object Skip extends Com
 // java necessities

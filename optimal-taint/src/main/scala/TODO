@@ -1,8 +1,7 @@
 
 TODOs for jose
-1 - Add tests for first cut of scala trace collector
-2 - Add code to go back from trace condition to source code line
-3 - Full pipeline to interpolator
+2.2 - Add SMTLIB interface
+3 - Full pipeline: collect traces, create smt formula, send to interpolator, identify source code positions
 4 - Consider ways to reduce explosion of traces:
   - Note a while (_ < 100) (e.g.) results in 100 unwound if-statements,
    and thus in 100^2 possible traces from that single command (assuming no nesting to make
