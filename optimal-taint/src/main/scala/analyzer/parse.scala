@@ -78,7 +78,7 @@ object parse extends JavaTokenParsers {
   def ifCom: Parser[If] =
     "if" ~> ifCond ~> basicCom ~ ("else" ~> basicCom) ^^ {
       case c1 ~ c2 =>
-        If(BExp(Util.uniqueId()), c1, c2)
+        If(BExp(Util.uniqueId()), c1, c2, None)
     }
 
   def ifCond: Parser[String] =
