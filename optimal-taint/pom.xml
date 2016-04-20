@@ -27,6 +27,13 @@
     	<version>2.11.0-M4</version>
     </dependency>
 
+    <dependency>
+      <groupId>com.googlecode.kiama</groupId>
+      <artifactId>kiama_2.11</artifactId>
+      <version>1.8.0</version>
+    </dependency>
+
+
     <!-- testing scala code -->
     <dependency>
     	<groupId>org.scalatest</groupId>

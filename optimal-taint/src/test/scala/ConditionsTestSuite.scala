@@ -42,6 +42,7 @@ class ConditionsTestSuite extends FunSuite with BeforeAndAfterEach {
     while (x < 1) {
     y = 10;
     }
+    z = 100;
     }
     """
     val ifStr = """
@@ -49,6 +50,7 @@ class ConditionsTestSuite extends FunSuite with BeforeAndAfterEach {
     if (x < 1) {
     y = 10;
     } else {}
+    z = 100;
     } else {}
     """
 

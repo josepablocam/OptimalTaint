@@ -1,6 +1,5 @@
 
 TODOs for jose
-1.1 - Add pretty printing of abstracted/unwound code
 2.2 - Add SMTLIB interface
 3 - Full pipeline: collect traces, create smt formula, send to interpolator, identify source code positions
 4 - Consider ways to reduce explosion of traces:
