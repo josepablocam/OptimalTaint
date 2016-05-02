@@ -87,8 +87,8 @@ object Util {
    * @return relabeled command
    */
   def relabelBranchesDFS(c: Com): Com = c match {
-    case If(b, c1, c2, iter) => If(BExp(Util.uniqueId()), relabelBranchesDFS(c1), relabelBranchesDFS(c2), iter)
-    case While(limit, b, c1) => While(limit, BExp(Util.uniqueId()), relabelBranchesDFS(c1))
+    case If(b, c1, c2, iter) => If(BExp(Util.uniqueId()), relabelBranchesDFS(c1), relabelBranchesDFS(c2), iter).setPos(c.pos)
+    case While(limit, b, c1) => While(limit, BExp(Util.uniqueId()), relabelBranchesDFS(c1)).setPos(c.pos)
     case Seq(ls) => Seq(ls.map(relabelBranchesDFS))
     case _ => c
   }
