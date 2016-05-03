@@ -26,5 +26,10 @@ object Example {
     println("-----------------")
     println("Not tainted traces")
     notTainted.foreach(println)
+
+    val interpolant = Interpolator.getInterpolant(tainted, notTainted)
+    println("--->Interpolant")
+    println(interpolant)
+
   }
 }

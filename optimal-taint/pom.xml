@@ -62,6 +62,12 @@
     	<version>2.2.3</version>
     </dependency>
 
+    <dependency>
+      <groupId>de.uni_freiburg.informatik.ultimate</groupId>
+      <artifactId>smtinterpol</artifactId>
+      <version>2.1</version>
+    </dependency>
+
     <!--
     <dependency>
     	<groupId>com.google.code.java-allocation-instrumenter</groupId>
