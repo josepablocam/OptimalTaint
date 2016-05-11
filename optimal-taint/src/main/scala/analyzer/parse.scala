@@ -122,18 +122,6 @@ object parse extends JavaTokenParsers {
     positioned(stringLiteral ^^ { s => SConst(s.substring(1, s.length - 1)) }) |
     positioned("(" ~> aexp <~ ")" ^^ { x => x })
 
-  // Parsing simple branch assignment model from SMT solver
-  def model: Parser[Map[String, Boolean]] =
-    "(model " ~> rep(modelAssignments) <~ ")" ^^ { x => x.toMap}
-
-  def modelAssignments: Parser[(String, Boolean)] =
-    "(define-fun " ~> ident ~ ("(" ~> ")" ~> "Bool" ~> truthVal <~ ")") ^^ {case id ~ tv => (id, tv)}
-
-  def truthVal: Parser[Boolean] =
-    "true" ^^ { v => v.toBoolean }
-    "false" ^^ { v => v.toBoolean }
-
-
 
   // Utilities
   def fromString(s: String, methodName: String = DEFAULT_METHOD_NAME) = {
@@ -148,8 +136,4 @@ object parse extends JavaTokenParsers {
     parseAll(parser, contents)
   }
 
-  def parseModel(modelStr: String) = {
-    val parser: Parser[Map[String, Boolean]] = model
-    parseAll(parser, modelStr)
-  }
 }
