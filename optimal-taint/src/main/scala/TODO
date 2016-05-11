@@ -1,8 +1,8 @@
 
 TODOs for jose
-2.2 - Add SMTLIB interface
-3 - Full pipeline: collect traces, create smt formula, send to interpolator, identify source code positions
-4 - Consider ways to reduce explosion of traces:
+1 - Add tests for interpolant minimization
+2 - From minimal interpolant to source code
+3 - Consider ways to reduce explosion of traces:
   - Note a while (_ < 100) (e.g.) results in 100 unwound if-statements,
    and thus in 100^2 possible traces from that single command (assuming no nesting to make
    things worse)....clearly this is untenable...
