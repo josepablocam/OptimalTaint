@@ -15,9 +15,12 @@ object Interpolator {
 
   def initScript(): Script = {
     val script = new SMTInterpol()
+    // needed for interpolant generation
     script.setOption(":produce-interpolants", true)
-    script.setOption(":interactive-mode", true)
-    script.setOption(":produce-assignments", true)
+    // silence log messages
+    script.setOption(":print-success", false)
+    script.setOption(":verbosity", 3)
+    // we can have the simplest logic for our purposes
     script.setLogic(Logics.QF_LIA)
     script
   }
@@ -67,7 +70,6 @@ object Interpolator {
     assert(interpolants.length == 1, "should only have 1 interpolant")
     // we're not using sequences of interpolants, just a single one
     val interpolant = interpolants.head
-    println(interpolant)
 
     // now we'd like to simplify our interpolant
     val simpleInterpolant = script.simplify(interpolant)
@@ -77,16 +79,8 @@ object Interpolator {
 
     script.pop(1)
 
-    // TODO: DNF step
-    // val dnfInterpolant = getDNF(interpolant)
-    // TODO: simplify DNF
-    // val psiMin = getSimplifiedDNF(dnfInterpolant)
-
     simpleInterpolant
   }
 
 
-  def getDNF(term: Term): Term = ???
-
-  def getSimplifiedDNF(term: Term): Term = ???
 }
