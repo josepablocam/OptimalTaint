@@ -1,6 +1,8 @@
+import analyzer.prog.{parse, Conditions, AST}
 import org.scalatest._
 
-import analyzer.{Conditions, parse, Util, AST, If, Seq}
+import analyzer.prog._
+import analyzer.Util
 
 
 class ConditionsTestSuite extends FunSuite with BeforeAndAfterEach {

@@ -1,4 +1,6 @@
-package analyzer
+package analyzer.prog
+
+import analyzer.Util
 
 
 /**

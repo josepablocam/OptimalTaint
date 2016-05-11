@@ -1,4 +1,4 @@
-package analyzer
+package analyzer.prog
 
 import org.kiama.output.PrettyPrinter
 

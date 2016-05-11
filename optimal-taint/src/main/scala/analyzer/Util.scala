@@ -1,5 +1,7 @@
 package analyzer
 
+import analyzer.prog._
+
 /**
  * Utilities for analyzer
  */
