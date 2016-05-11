@@ -1,13 +1,15 @@
-package analyzer
+package analyzer.interpolant
 
 import scala.util.parsing.combinator._
 
 
 /**
- * Parsing interpolants in order to be able to manipulate and find "intuitive" interpolant
- * (i.e. a minimal disjunction of path conditions)
+ * Parsing required output from SMT solver:
+ *  - interpolant
+ *  - Z3 "goals" (used to gather a DNF version of the interpolant)
+ *  The combination of these are used when calculating the intuitive interpolant
  */
-object InterpolantParser extends JavaTokenParsers {
+object SolverParser extends JavaTokenParsers {
   protected override val whiteSpace = """(\s|//.*|(?m)/\*(\*(?!/)|[^*])*\*/)+""".r
 
   def formula: Parser[Formula] =
@@ -19,7 +21,6 @@ object InterpolantParser extends JavaTokenParsers {
     const |
     id   |
     not
-
 
   def let: Parser[Formula] =
     "(" ~> "let" ~> ("(" ~> rep1(varBinding) <~ ")") ~ formula <~ ")" ^^ { case xs ~ f => Let(xs, f)}
@@ -37,9 +38,11 @@ object InterpolantParser extends JavaTokenParsers {
   def impl: Parser[Formula] =
     "(" ~> "=>" ~> formula ~ formula <~ ")" ^^ { case i ~ t => Impl(i, t) }
 
+  // e.g. k!0 (used in goals generated)
   def z3Vars: Parser[String] =
     """[a-zA-Z]+![0-9]+""".r
 
+  // e.g. .cse0 (used in interpolant generated)
   def smtInterpolVars: Parser[String] =
     """\.[a-zA-Z]+[a-zA-Z0-9]*""".r
 
@@ -55,8 +58,8 @@ object InterpolantParser extends JavaTokenParsers {
     "true" ^^ {_ => Const(true) } |
     "false" ^^ {_ => Const(false) }
 
-  // goals
-  def output: Parser[List[Formula]] =
+  // goals are the result of applying Z3 tactics
+  def tacticResult: Parser[List[Formula]] =
     rep1(goals)
 
   def goals: Parser[Formula] =
@@ -71,7 +74,7 @@ object InterpolantParser extends JavaTokenParsers {
 
   // Utilities
   def parseInterpolant(s: String) = parseAll(formula, s)
-  def parseGoals(s: String) = parseAll(output, s)
+  def parseGoals(s: String) = parseAll(tacticResult, s)
 
 }
 

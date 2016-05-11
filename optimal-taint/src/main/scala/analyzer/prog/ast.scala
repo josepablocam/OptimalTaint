@@ -1,13 +1,10 @@
-package analyzer
+package analyzer.prog
 
 import scala.util.parsing.input.Positional
 
-/**
- * Created by josecambronero on 4/13/16.
- */
 sealed abstract class AST extends Positional {
-  def pretty(): String = print.pretty(this)
-}
+    def pretty(): String = print.pretty(this)
+  }
 
 // Aexp
 sealed abstract class AExp extends AST
@@ -34,4 +31,3 @@ case object Skip extends Com
 case class Init(v: String, value: AExp) extends Com
 case class Incr(v: String) extends Com
 case object Return extends Com
-

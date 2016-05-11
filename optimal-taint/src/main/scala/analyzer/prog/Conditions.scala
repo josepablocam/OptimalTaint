@@ -1,4 +1,6 @@
-package analyzer
+package analyzer.prog
+
+import analyzer.{Util, prog}
 
 /**
  * Object to analyze trace conditions. Includes functionality to unwind while-loops
@@ -48,10 +50,10 @@ object Conditions {
     case If(b, c1, c2, iter) => If(b, unwindLoops(c1), unwindLoops(c2), iter).setPos(com.pos)
     case v @ Incr(_) => v
     case v @ Return => v
-    case v @ While(_, _, _) => Util.simplify(Seq(unwindLoops0(v :: Nil)))
+    case v @ While(_, _, _) => Util.simplify(prog.Seq(unwindLoops0(v :: Nil)))
     case Skip => Skip
     case Seq(Nil) => Skip
-    case Seq(cs) => Util.simplify(Seq(unwindLoops0(cs)))
+    case Seq(cs) => Util.simplify(prog.Seq(unwindLoops0(cs)))
     case _ => throw new UnsupportedOperationException("note yet implemented")
   }
 

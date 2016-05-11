@@ -1,6 +1,8 @@
-package analyzer
+package analyzer.prog
 
-import java.io.{FileReader, File}
+import java.io.{File, FileReader}
+
+import analyzer.Util
 
 import scala.util.parsing.combinator._
 import scala.util.parsing.input._

@@ -1,6 +1,8 @@
 package analyzer
 
-import java.io.File
+import analyzer.interpolant.{Solver, Formula}
+import analyzer.prog.{parse, Conditions}
+
 
 /**
  * Simple example showing how to use analyzer objects to partition traces for
@@ -71,7 +73,7 @@ object Example {
     println("Not tainted traces")
     notTainted.foreach(println)
 
-    val interpolant = Interpolator.getInterpolant(tainted, notTainted)
+    val interpolant = Solver.getInterpolant(tainted, notTainted)
     println("--->Interpolant (simplified by solver)")
     println(interpolant)
 
