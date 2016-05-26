@@ -151,9 +151,11 @@ object Formula {
       case And(ys) => ys.map(literalToInt).toSet
       case v @ Var(vs) => Set(literalToInt(v))
       case v @ Not(vs) => Set(literalToInt(v))
-      case _ => throw new UnsupportedOperationException("should be dnf (and issue)")
+      case _ => throw new UnsupportedOperationException("should be dnf (and issue) " + f.pretty)
       }
-    case _ => throw new UnsupportedOperationException("should be dnf")
+    // single path
+    case And(ys) => List(ys.map(literalToInt).toSet)
+    case _ => throw new UnsupportedOperationException("should be dnf " + f.pretty)
   }
 
   /**
