@@ -3,6 +3,8 @@ package analyzer
 import analyzer.interpolant.{Solver, Formula}
 import analyzer.prog.{parse, Conditions}
 
+import scala.io.Source
+
 
 /**
  * Simple example showing how to use analyzer objects to partition traces for
@@ -88,10 +90,15 @@ object Example {
   }
 
   def main(args: Array[String]): Unit = {
-    run(easySimplification)
-    println()
-    println()
-    run(hardSimplification)
-
+    if (args.length == 0) {
+      run(easySimplification)
+      println()
+      println()
+      run(hardSimplification)
+    } else {
+      val progStr = Source.fromFile(args(0)).getLines().toList.mkString("\n")
+      println(progStr)
+      run(progStr)
+    }
   }
 }
