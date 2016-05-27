@@ -33,7 +33,7 @@ object Util {
    */
   def simplify(com: Com): Com = com match {
     case Seq(x :: Nil) => x
-    case Seq(Nil) => Skip
+    case Seq(Nil) => Skip.setPos(com.pos)
     case _ => com
   }
 
@@ -91,7 +91,7 @@ object Util {
   def relabelBranchesDFS(c: Com): Com = c match {
     case If(b, c1, c2, iter) => If(BExp(Util.uniqueId()), relabelBranchesDFS(c1), relabelBranchesDFS(c2), iter).setPos(c.pos)
     case While(limit, b, c1) => While(limit, BExp(Util.uniqueId()), relabelBranchesDFS(c1)).setPos(c.pos)
-    case Seq(ls) => Seq(ls.map(relabelBranchesDFS))
+    case Seq(ls) => Seq(ls.map(relabelBranchesDFS)).setPos(c.pos)
     case _ => c
   }
 
