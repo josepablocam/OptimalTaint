@@ -52,8 +52,8 @@ object Conditions {
     case v @ Return => v
     case v @ While(_, _, _) => Util.simplify(prog.Seq(unwindLoops0(v :: Nil)))
     case Skip => Skip
-    case Seq(Nil) => Skip
-    case Seq(cs) => Util.simplify(prog.Seq(unwindLoops0(cs)))
+    case Seq(Nil) => Skip.setPos(com.pos)
+    case Seq(cs) => Util.simplify(prog.Seq(unwindLoops0(cs)).setPos(com.pos))
     case _ => throw new UnsupportedOperationException("note yet implemented")
   }
 
@@ -102,6 +102,32 @@ object Conditions {
    */
   def partitionTraces(ts: Set[Trace], query: String): (Set[Trace], Set[Trace]) = {
     ts.partition { case Trace(_, b) => b.getOrElse(query, false) }
+  }
+
+
+  /**
+   * Given a program, obtain a map from branching conditions to the branching conditions nested
+   * inside. Used to find instrumentation points given a partial
+   * trace, avoids exploring unnecessary branches to find instrumentation point
+   * @param c unwound program
+   * @return map from branching conditions (integer identifiers) to branching conditions that
+   *         are nested inside them
+   */
+  def nestedBranchMap(c: Com): Map[Int, Set[Int]] = c match {
+    case v @ Assign(_, _) => Map()
+    case If(b, c1, c2, iter) => {
+      val m1 = nestedBranchMap(c1)
+      val m2 = nestedBranchMap(c2)
+      val dominated = m1.keys ++ m2.keys
+      Map(b.n -> m1.keys.toSet) ++ Map(-b.n -> m2.keys.toSet) ++ m1 ++ m2
+    }
+    case Incr(_) => Map()
+    case Return => Map()
+    case While(_, _, _) => throw new UnsupportedOperationException("should be unrolled")
+    case Skip => Map()
+    case Seq(cs) => cs.map(nestedBranchMap).reduce(_ ++ _)
+    case Init(_, _) => Map()
+    case _ => throw new UnsupportedOperationException("not yet implemented: " + c.pretty())
   }
 
 }
