@@ -42,6 +42,9 @@ object print extends PrettyPrinter {
       case While(limit, b, c1) =>
         "while" <> parens("_ <" <+> limit.toString) <+>
           braces(nest(line <> show(c1)) <> line)
+      case AddTaint(v) => v + " := true;" <> line
+      case RemoveTaint(v) => v + " := false;" <> line
+      case InitShadowVar(v) => "boolean " + v + ":= false;" <> line
       case _ => throw new UnsupportedOperationException("printing not yet implemented")
     }
 
