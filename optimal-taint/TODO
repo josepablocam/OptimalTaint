@@ -1,7 +1,7 @@
 
 TODOs for jose
-1 - Add tests for interpolant minimization
-2 - From minimal interpolant to source code
+1 - Fix bug when adding instrumentation to code that has skips (i.e. empty branches)
+2 - Add tests for interpolant minimization
 3 - Consider ways to reduce explosion of traces:
   - Note a while (_ < 100) (e.g.) results in 100 unwound if-statements,
    and thus in 100^2 possible traces from that single command (assuming no nesting to make
