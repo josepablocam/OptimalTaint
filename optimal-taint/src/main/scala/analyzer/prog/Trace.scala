@@ -38,6 +38,7 @@ object Trace {
       val newEnv = env.updated(v, usedTainted)
       Trace(trace.conds, newEnv)
     }
+    case Seq(cs) => cs.foldLeft(trace)((t, c) => updateTaint(t, c))
     case _ => trace
   }
 

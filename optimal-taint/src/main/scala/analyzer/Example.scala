@@ -1,7 +1,7 @@
 package analyzer
 
 import analyzer.interpolant.{Solver, Formula}
-import analyzer.prog.{parse, Conditions}
+import analyzer.prog.{Instrumenter, parse, Conditions}
 
 import scala.io.Source
 
@@ -75,6 +75,10 @@ object Example {
     println("Not tainted traces")
     notTainted.foreach(println)
 
+    if (tainted.isEmpty) {
+      return // done
+    }
+
     val interpolant = Solver.getInterpolant(tainted, notTainted)
     println("--->Interpolant (simplified by solver)")
     println(interpolant)
@@ -87,6 +91,15 @@ object Example {
     val minimalInterp = Formula.findMinimal(dnfInterp)
     println("----> Minimal Interpolant (aka intuitive interpolant)")
     println(minimalInterp)
+
+    val instrs = Instrumenter.getInstrumentationInstructions(cleanUnwound, minimalInterp, taintedVars, queryVar)
+    println(instrs)
+    instrs.foreach(x => println(x.pos))
+
+    val instrumentedSrc = Instrumenter.instrumentSourceCode(progStr, instrs)
+    println("----> Sketch instrumentation added")
+    println(instrumentedSrc)
+    println()
   }
 
   def main(args: Array[String]): Unit = {

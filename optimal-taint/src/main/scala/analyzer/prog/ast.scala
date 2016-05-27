@@ -31,3 +31,9 @@ case object Skip extends Com
 case class Init(v: String, value: AExp) extends Com
 case class Incr(v: String) extends Com
 case object Return extends Com
+
+// instrumentation instructions
+sealed abstract class InstrumentationInstr extends Com
+case class AddTaint(v: String) extends InstrumentationInstr
+case class RemoveTaint(v: String) extends InstrumentationInstr
+case class InitShadowVar(v: String) extends InstrumentationInstr

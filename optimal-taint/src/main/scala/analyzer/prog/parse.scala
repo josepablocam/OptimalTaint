@@ -55,7 +55,11 @@ object parse extends JavaTokenParsers {
 
   // Actual core syntaax
   def com: Parser[Com] =
-    rep(basicCom) ^^ { cs => Util.simplify(Seq(cs)) }
+    rep(basicCom) ^^ {
+      // assign line position from first command in sequence
+      case cs @ x :: xs => Util.simplify(Seq(cs).setPos(x.pos))
+      case cs => Util.simplify(Seq(cs))
+    }
 
   def basicCom: Parser[Com] =
     initCom |
@@ -66,6 +70,7 @@ object parse extends JavaTokenParsers {
       whileCom |
       ifCom |
       "{" ~> com <~ "}"
+
 
   // for java purposes
   def callCom: Parser[Com] =
