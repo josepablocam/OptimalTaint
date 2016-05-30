@@ -92,10 +92,6 @@ object Example {
     println("----> Minimal Interpolant (aka intuitive interpolant)")
     println(minimalInterp)
 
-    val instrs = Instrumenter.getInstrumentationInstructions(cleanUnwound, minimalInterp, taintedVars, queryVar)
-    println(instrs)
-    instrs.foreach(x => println(x.pos))
-
     val instrumentedSrc = Instrumenter.instrumentSourceCode(progStr, instrs)
     println("----> Sketch instrumentation added")
     println(instrumentedSrc)

@@ -14,6 +14,14 @@ import scala.util.parsing.input._
 object parse extends JavaTokenParsers {
   protected override val whiteSpace = """(\s|//.*|(?m)/\*(\*(?!/)|[^*])*\*/)+""".r
 
+  // simple way to allow line number for empty branches
+  // extends positional to keep track of input line/column
+  abstract class Brace extends Positional
+  // make them case classes as case objects are only static (just one)
+  // and so won't keep track of line number/column appropriately
+  case class LBrace(s: String) extends Brace
+  case class RBrace(s: String) extends Brace
+
   val reserved: Set[String] =
     Set("true", "false", "if", "else",
       "while", "class", "return",
@@ -69,7 +77,19 @@ object parse extends JavaTokenParsers {
       assignCom |
       whileCom |
       ifCom |
-      "{" ~> com <~ "}"
+      lbrace ~ com ~ rbrace ^^ { case l ~ body ~ r =>
+        // empty statements are given the position of the closing brace
+        if (body.pos == NoPosition) {
+          body.setPos(r.pos)
+        }
+        body
+      }
+
+  // right-brace with position information
+  def rbrace: Parser[Brace] = positioned( "}" ^^ { x => RBrace(x) })
+
+  // left-brace for consistency (position info not used here)
+  def lbrace: Parser[Brace] = "{" ^^ { x => LBrace(x) }
 
 
   // for java purposes
