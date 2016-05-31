@@ -65,8 +65,12 @@ object SolverParser extends JavaTokenParsers {
   def goals: Parser[Formula] =
     "(" ~> "goals" ~> rep1(goal) <~ ")" ^^ { case xs => Or(xs) }
 
+  // empty goal is trivially satisfiable (i.e. true)
   def goal: Parser[Formula] =
-    "(" ~> "goal" ~> rep1(formula) <~ goalInfo <~ ")" ^^ {case xs => And(xs)}
+    "(" ~> "goal" ~> rep(formula) <~ goalInfo <~ ")" ^^ {
+      case x :: xs => And(x :: xs)
+      case Nil => Const(true)
+    }
 
   def goalInfo: Parser[String] =
     ":precision" ~> id ~> ":depth" <~ wholeNumber
