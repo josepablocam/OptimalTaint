@@ -23,7 +23,7 @@ object Solver {
    * Initialize a "script", which is the SMTInterpol solver, with all necessary options
    * @return SMTInterpol script
    */
-  def initScript(): Script = {
+  private def initScript(): Script = {
     val script = new SMTInterpol()
     // needed for interpolant generation
     script.setOption(":produce-interpolants", true)
@@ -40,7 +40,7 @@ object Solver {
    * @param script
    * @param bs
    */
-  def declareBranchConditions(script: Script, bs: Set[Int]): Unit = {
+  private def declareBranchConditions(script: Script, bs: Set[Int]): Unit = {
     val funs = bs.map(Math.abs)
     funs.foreach {
       x => script.declareFun(FUN_PREFIX + x, Array(), script.sort("Bool"))
@@ -53,7 +53,7 @@ object Solver {
    * @param trace
    * @return
    */
-  def termFromTrace(script: Script, trace: Trace): Term = {
+  private def termFromTrace(script: Script, trace: Trace): Term = {
     val terms = trace.conds.map { x =>
       if (x > 0) script.term(FUN_PREFIX + x) else script.term("not", script.term(FUN_PREFIX + Math.abs(x)))
     }
@@ -68,15 +68,15 @@ object Solver {
    * @param bs
    * @return
    */
-  def definePhi(script: Script, name: String, bs: Set[Trace]): Term = {
+  private def definePhi(script: Script, name: String, bs: Set[Trace]): Term = {
     val clauses = bs.map(trace => termFromTrace(script, trace)).toList
     val phi = if (clauses.length > 1) script.term("or", clauses:_*) else clauses.head
     script.annotate(phi, new Annotation(":named", name))
   }
 
   // Wrappers for the relevant sets of traces
-  def definePhiP(script: Script, bs: Set[Trace]): Term = definePhi(script, PHI_P, bs)
-  def definePhiN(script: Script, bs: Set[Trace]): Term = definePhi(script, PHI_N, bs)
+  private def definePhiP(script: Script, bs: Set[Trace]): Term = definePhi(script, PHI_P, bs)
+  private def definePhiN(script: Script, bs: Set[Trace]): Term = definePhi(script, PHI_N, bs)
 
   /**
    * Get an interpolant between tainted and non-tainted trace sets. The solver returns a term
