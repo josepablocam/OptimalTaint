@@ -78,7 +78,7 @@ object Formula {
    * @param e
    * @return
    */
-  def varsUsed(e: Formula): Set[String] = e match {
+  private def varsUsed(e: Formula): Set[String] = e match {
     case Ite(b, t, f) => varsUsed(b) ++ varsUsed(t) ++ varsUsed(f)
     case And(es) => es.flatMap(varsUsed).toSet
     case Or(es) => es.flatMap(varsUsed).toSet
@@ -91,13 +91,13 @@ object Formula {
 
   // Produce z3 commands
   // Declare a const (declaring a function without arguments)
-  def declareConst(s: String): String = s"(declare-fun $s () Bool)"
+  private def declareConst(s: String): String = s"(declare-fun $s () Bool)"
   // Wrap a term in an assertiong
-  def assertTerm(s: String): String = s"(assert $s)"
+  private def assertTerm(s: String): String = s"(assert $s)"
   // Apply z3 CNF conversion
-  def applyCNF: String = "(apply (then (! simplify :elim-and true) elim-term-ite tseitin-cnf))"
+  private def applyCNF: String = "(apply (then (! simplify :elim-and true) elim-term-ite tseitin-cnf))"
   // simplify, then repeatedly split-clause and simplify sub-clause (or skip when done)
-  def applyDNF: String = "(apply (then simplify (repeat (or-else (then split-clause simplify) skip))))"
+  private def applyDNF: String = "(apply (then simplify (repeat (or-else (then split-clause simplify) skip))))"
 
   /**
    * Combine all necessary commands for z3 to take a formula representing an interpolant to
@@ -105,7 +105,7 @@ object Formula {
    * @param e
    * @return
    */
-  def combineZ3DNFCommands(e: Formula): List[String] = {
+  private def combineZ3DNFCommands(e: Formula): List[String] = {
     // declare constants used
     val consts = varsUsed(e).map(declareConst).toList
     val asserted = assertTerm(e.pretty)
@@ -146,7 +146,7 @@ object Formula {
    * @param f DNF interpolant formula
    * @return
    */
-  def pathsToSets(f: Formula): List[Set[Int]] = f match {
+  private def pathsToSets(f: Formula): List[Set[Int]] = f match {
     case Or(xs) => xs.map {
       case And(ys) => ys.map(literalToInt).toSet
       case v @ Var(vs) => Set(literalToInt(v))
@@ -164,7 +164,7 @@ object Formula {
    * @param f
    * @return
    */
-  def literalToInt(f: Formula): Int = f match {
+  private def literalToInt(f: Formula): Int = f match {
     case Var(b) => b.dropWhile(c => !Character.isDigit(c)).toInt
     case Not(v) => -1 * literalToInt(v)
     case _ => throw new UnsupportedOperationException("shouldn't convert other formulas to integer")
